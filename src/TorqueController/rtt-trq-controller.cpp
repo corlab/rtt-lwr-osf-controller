@@ -113,6 +113,7 @@ bool RTTTrqController::configureHook() {
 
     final << 1.5708, 1.3963, 1.2217, 1.0472, 0.8727, 0.6981, 0.5236;
     start_time = 3.0;
+
     this->QP = QuinticPolynomial(this->start_time, start_time+30,init, final);
     this->_task_test = TaskTest(this->start_time, start_time+10,Pi, Pf);
 
@@ -140,6 +141,8 @@ bool RTTTrqController::configureHook() {
     Kp_cart.setConstant(50.0);
     Kd_cart.setConstant(14.0);
 
+    tau_0.resize(DEFAULT_NR_JOINTS);
+
     //Khatib controller:
 	M_bar.resize(6,6);
 	C_bar.resize(6);
@@ -147,24 +150,31 @@ bool RTTTrqController::configureHook() {
 	CG_bar.resize(6);
 	Forces.resize(6);
 
+	lastJntVel = rci::JointVelocities::create(DEFAULT_NR_JOINTS, 0.0);
+
 //	_jac.resize(DEFAULT_NR_JOINTS);
 //	_jac_dot.resize(DEFAULT_NR_JOINTS);
-	jac_cstr_.resize(DEFAULT_NR_JOINTS);
+	jac_cstr_.resize(6, DEFAULT_NR_JOINTS);
+	jac_cstr_MPI.resize(DEFAULT_NR_JOINTS, 6);
+
+	identity77.resize(7,7);
+	identity66.resize(6,6);
+	identity77 = Eigen::MatrixXd::Identity(7, 7);
+	identity66 = Eigen::MatrixXd::Identity(6, 6);
 
 	tmpeye77.resize(7,7);
 	tmpeye66.resize(6,6);
-	tmpeye77 = 0.01 * Eigen::MatrixXd::Identity(7, 7);
-	tmpeye66 = 0.01 * Eigen::MatrixXd::Identity(6, 6);
+	tmpeye77 = 0.01 * identity77;
+	tmpeye66 = 0.01 * identity66;
 
 	preLambda.resize(6,6);
 	ref_acc.resize(6);
 
 	P.resize(DEFAULT_NR_JOINTS,DEFAULT_NR_JOINTS);
-	P_tau.resize(DEFAULT_NR_JOINTS,DEFAULT_NR_JOINTS);
 
-//	H_cstr.resize(DEFAULT_NR_JOINTS,DEFAULT_NR_JOINTS);
-//	C_cstr.resize(DEFAULT_NR_JOINTS);
-//	jac_cstr_.resize(6,DEFAULT_NR_JOINTS);
+
+	H_cstr_.resize(DEFAULT_NR_JOINTS,DEFAULT_NR_JOINTS);
+	C_cstr_.resize(DEFAULT_NR_JOINTS);
 	_lambda_des.resize(6);
 
     RTT::log(RTT::Error) << "qi :\n" << init.transpose() << RTT::endlog();
@@ -182,6 +192,7 @@ bool RTTTrqController::startHook() {
 	}
 	l(Info) << "started !" << endlog();
 	internalStartTime = getSimulationTime();
+	last_SimulationTime = getSimulationTime();
 	return true;
 
 }
@@ -254,9 +265,17 @@ void RTTTrqController::updateHook() {
 		return;
 	}
 
+	double delta_t = getSimulationTime() - last_SimulationTime;
+	currJntAcc = rci::JointAccelerations::fromRad_ss( (lastJntVel->rad_sVector() - currJntVel->rad_sVector()) * (1 / delta_t) );
+
 	// calculate mass(H), G, jac_ (based on velocities)
     updateDynamicsAndKinematics(currJntPos, currJntVel, currJntTrq);
-    jac_cstr_.data = jac_.data; //TODO
+    jac_cstr_ = jac_.data; //TODO
+    jac_cstr_.row(0).setZero();
+    jac_cstr_.row(3).setZero();
+    jac_cstr_.row(4).setZero();
+    jac_cstr_.row(5).setZero();
+
 
 	// read rsb position command
 	{
@@ -333,9 +352,9 @@ void RTTTrqController::updateHook() {
 //        l(Error) << "pose: " << _curr_ee_pose << RTT::endlog();
 //        l(Error) << "velo: " << _curr_ee_vel << RTT::endlog();
 //
-        l(Error) << "cartFrame.M.GetRot().x(): " << cartFrame.M.GetRot().x() / (2*M_PI) * 360 << RTT::endlog();
-        l(Error) << "cartFrame.M.GetRot().y(): " << cartFrame.M.GetRot().y() / (2*M_PI) * 360<< RTT::endlog();
-        l(Error) << "cartFrame.M.GetRot().z(): " << cartFrame.M.GetRot().z() / (2*M_PI) * 360 << RTT::endlog();
+//        l(Error) << "cartFrame.M.GetRot().x(): " << cartFrame.M.GetRot().x() / (2*M_PI) * 360 << RTT::endlog();
+//        l(Error) << "cartFrame.M.GetRot().y(): " << cartFrame.M.GetRot().y() / (2*M_PI) * 360<< RTT::endlog();
+//        l(Error) << "cartFrame.M.GetRot().z(): " << cartFrame.M.GetRot().z() / (2*M_PI) * 360 << RTT::endlog();
 //
 
 
@@ -347,7 +366,8 @@ void RTTTrqController::updateHook() {
         // stop open loop joint controller
 
         //compute projection
-        P = tmpeye77 - (jac_cstr_.data.transpose() * jac_cstr_.data).inverse() * jac_cstr_.data.transpose() * jac_cstr_.data;
+        jac_cstr_MPI = (jac_cstr_.transpose() * jac_cstr_).inverse() * jac_cstr_.transpose();
+        P = identity77 - (jac_cstr_MPI * jac_cstr_);
 
 //        //Start Khatib endeffector motion controller
 //        _inertia.data = _inertia.data + tmpeye77;
@@ -378,12 +398,19 @@ void RTTTrqController::updateHook() {
         ref_acc = pdd_tmp.data + Kd_cart.asDiagonal()*(pd_tmp.data - _curr_ee_vel) + Kp_cart.asDiagonal()*(p_tmp.data - _curr_ee_pose);
 //        Forces  = M_bar * ref_acc + C_bar + G_bar;
         Forces  = M_bar * ref_acc + CG_bar;
-        jnt_trq_cmd_ = jac_.data.transpose()*Forces;
+        jnt_trq_cmd_ = P * jac_.data.transpose()*Forces;
         //Stop Khatib endeffector motion controller
 
 
         //Start nullspace controller
 
+//        H_cstr.data = P * H_.data +  identity77 - P;
+//
+//        C_cstr = -(jac_cstr_MPI * jac_cstr.data);
+//        N = identity77 - jac_.data.transpose() * ((jac_.data * H_cstr.data.inverse() * P * jac_.data.transpose()).inverse() * jac_.data * H_cstr.data.inverse() * P);
+//
+//        tau_0 = Kp.asDiagonal()*(q_tmp.data - jnt_pos_) - Kd.asDiagonal()*(jnt_vel_) ;
+//        jnt_trq_cmd_ += P * N * tau_0;
 
         //Stop nullspace controller
 
@@ -392,19 +419,15 @@ void RTTTrqController::updateHook() {
 
 //        P_tau = P;
 
-//        _inertia_cstr = _inertia.data;
+
 //
-//        _coriolis_cstr = _coriolis.data;
+//        C_cstr = _coriolis.data;
 //
-//        _jac_cstr = _jac.data;
 //
 //        _lambda_des.setConstant(0.0);
 //        _lambda_des[0] = -5;
-
-
-//        RTT::log(RTT::Error) << "jnt_trq_cmd_ :\n" << jnt_trq_cmd_ << RTT::endlog();
 //
-//        jnt_trq_cmd_ = (tmpeye77 - P) * (h) + (tmpeye77 - P) * H_.data * H_cstr_.inverse() * (P H_.data qdd * + _coriolis_cstr) + _jac_cstr.transpose() * _lambda_des;
+//        jnt_trq_cmd_ = (identity77 - P) * (h) + (identity77 - P) * H_.data * H_cstr_.inverse() * (P * H_.data * currJntAcc * + C_cstr) + jac_cstr_.transpose() * _lambda_des;
 
         //Stop external forces controller
 
@@ -423,7 +446,7 @@ void RTTTrqController::updateHook() {
         jnt_trq_cmd_ = kg_.asDiagonal() * G_.data;
 	}
 
-    RTT::log(RTT::Error) << "jnt_trq_cmd_ :\n" << jnt_trq_cmd_ << RTT::endlog();
+//    RTT::log(RTT::Error) << "jnt_trq_cmd_ :\n" << jnt_trq_cmd_ << RTT::endlog();
 
     Eigen::VectorXd tmp;
     tmp.resize(7);
@@ -446,6 +469,9 @@ void RTTTrqController::updateHook() {
 	if (cmdJntTrq_Port.connected()) {
 		cmdJntTrq_Port.write(outJntTrq);
 	}
+
+	last_SimulationTime = getSimulationTime();
+	lastJntVel = currJntVel;
 }
 
 void RTTTrqController::stopHook() {

@@ -11,6 +11,7 @@
 #include <rci/dto/JointAngles.h>
 #include <rci/dto/JointTorques.h>
 #include <rci/dto/JointVelocities.h>
+#include <rci/dto/JointAccelerations.h>
 #include <rci/dto/JointImpedance.h>
 
 #include <rsb/Factory.h>
@@ -64,6 +65,8 @@ protected:
 	rci::JointAnglesPtr currJntPos;
 	rci::JointTorquesPtr currJntTrq;
 	rci::JointVelocitiesPtr currJntVel;
+	rci::JointVelocitiesPtr lastJntVel;
+	rci::JointAccelerationsPtr currJntAcc;
 	/**
 	 * Hold the write value
 	 */
@@ -82,6 +85,7 @@ protected:
 	 * Misc controller vars
 	 */
 	double gain;
+	double last_SimulationTime;
 
 	/** ####### STORAGE FIELDS FOR CONTROLLERS ####### */
 	Eigen::VectorXd jnt_trq_cmd_;
@@ -122,8 +126,11 @@ protected:
 	Eigen::VectorXd Forces;
 
 //	KDL::Jacobian _jac, _jac_dot;
-	KDL::Jacobian jac_cstr_;
+	Eigen::MatrixXd jac_cstr_;
+	Eigen::MatrixXd jac_cstr_MPI;
 	KDL::JntArrayVel joint_position_velocity_des;
+
+	Eigen::VectorXd tau_0;
 
 	KDL::JntArray q_from_robot;
 	KDL::JntArray qd_from_robot;
@@ -136,9 +143,12 @@ protected:
 	Eigen::MatrixXd P, P_tau;
 	Eigen::MatrixXd N;
 
+	Eigen::MatrixXd identity77;
+	Eigen::MatrixXd identity66;
+
 
 	Eigen::MatrixXd H_cstr_, _jac_cstr;
-	Eigen::VectorXd _coriolis_cstr;
+	Eigen::VectorXd C_cstr_;
 
     Eigen::VectorXd getQFromGazebo_EIGEN();
     Eigen::VectorXd getQdFromGazebo_EIGEN();
