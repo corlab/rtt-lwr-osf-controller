@@ -2,6 +2,7 @@
 #include <rtt/RTT.hpp>
 #include <cmath>
 
+
 TaskTest::TaskTest() : radius(0.3) {
 
 }
@@ -16,19 +17,44 @@ TaskTest::TaskTest(double _start_time, double _end_time, Eigen::VectorXd _Pi, Ei
     this->Pi = _Pi;
     this->Pf = _Pf;
     this->deltaP = Pf - Pi;
+
+    BoardRot.resize(3,3);
+    BoardTransl.resize(3);
+    TipOrientation.resize(3);
+
+    double boardAngle_deg = 45;
+    double boardAngle_rad = boardAngle_deg / 360 * 2 * M_PI;
+    BoardRot(0,0) = cos(boardAngle_rad);
+    BoardRot(0,2) = sin(boardAngle_rad);
+    BoardRot(1,1) = 1;
+    BoardRot(2,0) = -sin(boardAngle_rad);
+    BoardRot(2,2) = cos(boardAngle_rad);
+
+//    BoardTransl(0) = 0.753698;
+//    BoardTransl(1) = 0.0;
+//    BoardTransl(2) = 0.464900;
+
+    BoardTransl(0) = -0.45;
+	BoardTransl(1) = 0.0;
+	BoardTransl(2) = 0.7;
+
+    TipOrientation(0) = 0;
+    TipOrientation(1) = -M_PI - boardAngle_rad;
+    TipOrientation(2) = 0;
+    radius = 0.2;
 }
 
 
 Eigen::VectorXd TaskTest::getPosition(double time) {
     Eigen::VectorXd ret(6);
-    if (time >= end_time)
-        time = end_time;
+//    if (time >= end_time)
+//        time = end_time;
 
 //    if (time < end_time){
-		double tau = (time-start_time)/(deltaT);
-		for (int i=0; i<6; ++i){
-			ret(i) = Pi(i) + deltaP(i)*(6*std::pow(tau,5.0)-15*std::pow(tau,4.0)+10*std::pow(tau,3.0));
-		}
+//		double tau = (time-start_time)/(deltaT);
+//		for (int i=0; i<6; ++i){
+//			ret(i) = Pi(i) + deltaP(i)*(6*std::pow(tau,5.0)-15*std::pow(tau,4.0)+10*std::pow(tau,3.0));
+//		}
 //    }
 //    else{
 //    	double tau = (time-end_time)/(deltaT)*(2.0*M_PI);
@@ -36,44 +62,83 @@ Eigen::VectorXd TaskTest::getPosition(double time) {
 //    	ret(1) += 0.5 * sin(tau);
 //    	ret(2) += 0.25* (-cos(tau)+1.0);
 //    }
+
+    Eigen::VectorXd tmp(3);
+    tmp(0) = radius * cos(time-start_time);
+    tmp(1) = radius * sin(time-start_time);
+    tmp(2) = 0.0;
+    tmp = BoardRot * tmp + BoardTransl;
+
+    ret(0) = tmp(0);
+    ret(1) = tmp(1);
+    ret(2) = tmp(2);
+    ret(3) = TipOrientation(0);
+    ret(4) = TipOrientation(1);
+    ret(5) = TipOrientation(2);
     return ret;
 }
 
 Eigen::VectorXd TaskTest::getVelocity(double time) {
     Eigen::VectorXd ret(6);
-    if (time >= end_time)
-        time = end_time;
+//    if (time >= end_time)
+//        time = end_time;
 
 //    if (time < end_time){
-		double tau = (time-start_time)/(deltaT);
-		for (int i=0; i<6; ++i){
-			ret(i) = deltaP(i)*(30*std::pow(tau,4.0)-60*std::pow(tau,3.0)+30*std::pow(tau,2.0));
-		}
+//		double tau = (time-start_time)/(deltaT);
+//		for (int i=0; i<6; ++i){
+//			ret(i) = deltaP(i)*(30*std::pow(tau,4.0)-60*std::pow(tau,3.0)+30*std::pow(tau,2.0));
+//		}
 //    }
 //    else{
 //    	double tau = (time-end_time)/(deltaT)*(2.0*M_PI);
 //    	ret(1) = 0.5 * cos(tau);
 //		ret(2) = 0.25 * sin(tau);
 //	}
+
+    Eigen::VectorXd tmp(3);
+    tmp(0) = radius * (-1)*sin(time-start_time);
+    tmp(1) = radius * cos(time-start_time);
+    tmp(2) = 0.0;
+    tmp = BoardRot * tmp;
+
+    ret(0) = tmp(0);
+    ret(1) = tmp(1);
+    ret(2) = tmp(2);
+    ret(3) = 0;
+    ret(4) = 0;
+    ret(5) = 0;
     return ret;
 }
 
 Eigen::VectorXd TaskTest::getAcceleration(double time) {
     Eigen::VectorXd ret(6);
-    if (time >= end_time)
-        time = end_time;
+//    if (time >= end_time)
+//        time = end_time;
 
 //    if (time < end_time){
-		double tau = (time-start_time)/(deltaT);
-		for (int i=0; i<6; ++i){
-			ret(i) = deltaP(i)*(120*std::pow(tau,3.0)-180*std::pow(tau,2.0)+60*tau);
-		}
+//		double tau = (time-start_time)/(deltaT);
+//		for (int i=0; i<6; ++i){
+//			ret(i) = deltaP(i)*(120*std::pow(tau,3.0)-180*std::pow(tau,2.0)+60*tau);
+//		}
 //    }
 //    else{
 //    	double tau = (time-end_time)/(deltaT)*(2.0*M_PI);
 //    	ret(1) = 0.5 * -sin(tau);
 //		ret(2) = 0.25 * cos(tau);
 //    }
+
+    Eigen::VectorXd tmp(3);
+    tmp(0) = radius * (-1)*cos(time-start_time);
+    tmp(1) = radius * (-1)*sin(time-start_time);
+	tmp(2) = 0.0;
+	tmp = BoardRot * tmp;
+
+    ret(0) = tmp(0);
+    ret(1) = tmp(1);
+    ret(2) = tmp(2);
+    ret(3) = 0;
+    ret(4) = 0;
+    ret(5) = 0;
     return ret;
 }
 

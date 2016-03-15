@@ -99,7 +99,6 @@ bool RTTTrqController::configureHook() {
 	yD(4) = 0;
 	yD(5) = 0;
 
-    //Pouya
     Eigen::VectorXd init(7), final(7);
     Eigen::VectorXd Pi(6), Pf(6);
     init.setZero(7);
@@ -109,6 +108,8 @@ bool RTTTrqController::configureHook() {
 
     Pi << 0.0, 0.0, 1.178, 0.0, 0.0, 0.0;
     Pf << -0.71, -0.23, 0.55, 0.0, 0.0, 0.0;
+
+
 
     final << 1.5708, 1.3963, 1.2217, 1.0472, 0.8727, 0.6981, 0.5236;
     start_time = 3.0;
@@ -146,8 +147,9 @@ bool RTTTrqController::configureHook() {
 	CG_bar.resize(6);
 	Forces.resize(6);
 
-	_jac.resize(DEFAULT_NR_JOINTS);
-	_jac_dot.resize(DEFAULT_NR_JOINTS);
+//	_jac.resize(DEFAULT_NR_JOINTS);
+//	_jac_dot.resize(DEFAULT_NR_JOINTS);
+	jac_cstr_.resize(DEFAULT_NR_JOINTS);
 
 	tmpeye77.resize(7,7);
 	tmpeye66.resize(6,6);
@@ -160,9 +162,9 @@ bool RTTTrqController::configureHook() {
 	P.resize(DEFAULT_NR_JOINTS,DEFAULT_NR_JOINTS);
 	P_tau.resize(DEFAULT_NR_JOINTS,DEFAULT_NR_JOINTS);
 
-	_inertia_cstr.resize(DEFAULT_NR_JOINTS,DEFAULT_NR_JOINTS);
-	_coriolis_cstr.resize(DEFAULT_NR_JOINTS);
-	_jac_cstr.resize(6,DEFAULT_NR_JOINTS);
+//	H_cstr.resize(DEFAULT_NR_JOINTS,DEFAULT_NR_JOINTS);
+//	C_cstr.resize(DEFAULT_NR_JOINTS);
+//	jac_cstr_.resize(6,DEFAULT_NR_JOINTS);
 	_lambda_des.resize(6);
 
     RTT::log(RTT::Error) << "qi :\n" << init.transpose() << RTT::endlog();
@@ -254,6 +256,7 @@ void RTTTrqController::updateHook() {
 
 	// calculate mass(H), G, jac_ (based on velocities)
     updateDynamicsAndKinematics(currJntPos, currJntVel, currJntTrq);
+    jac_cstr_.data = jac_.data; //TODO
 
 	// read rsb position command
 	{
@@ -330,10 +333,12 @@ void RTTTrqController::updateHook() {
 //        l(Error) << "pose: " << _curr_ee_pose << RTT::endlog();
 //        l(Error) << "velo: " << _curr_ee_vel << RTT::endlog();
 //
-//        l(Error) << "cartFrame.M.GetRot().x(): " << cartFrame.M.GetRot().x() << RTT::endlog();
-//        l(Error) << "cartFrame.M.GetRot().y(): " << cartFrame.M.GetRot().y() << RTT::endlog();
-//        l(Error) << "cartFrame.M.GetRot().z(): " << cartFrame.M.GetRot().z() << RTT::endlog();
+        l(Error) << "cartFrame.M.GetRot().x(): " << cartFrame.M.GetRot().x() / (2*M_PI) * 360 << RTT::endlog();
+        l(Error) << "cartFrame.M.GetRot().y(): " << cartFrame.M.GetRot().y() / (2*M_PI) * 360<< RTT::endlog();
+        l(Error) << "cartFrame.M.GetRot().z(): " << cartFrame.M.GetRot().z() / (2*M_PI) * 360 << RTT::endlog();
 //
+
+
 //        throw "out";
 
         // start open loop joint controller
@@ -342,7 +347,7 @@ void RTTTrqController::updateHook() {
         // stop open loop joint controller
 
         //compute projection
-//        P = tmpeye77 - (_jac.data.transpose() * _jac.data).inverse() * _jac.data.transpose() * _jac.data;
+        P = tmpeye77 - (jac_cstr_.data.transpose() * jac_cstr_.data).inverse() * jac_cstr_.data.transpose() * jac_cstr_.data;
 
 //        //Start Khatib endeffector motion controller
 //        _inertia.data = _inertia.data + tmpeye77;
@@ -386,7 +391,7 @@ void RTTTrqController::updateHook() {
         //Start external forces controller
 
 //        P_tau = P;
-//
+
 //        _inertia_cstr = _inertia.data;
 //
 //        _coriolis_cstr = _coriolis.data;
@@ -395,11 +400,11 @@ void RTTTrqController::updateHook() {
 //
 //        _lambda_des.setConstant(0.0);
 //        _lambda_des[0] = -5;
+
+
+//        RTT::log(RTT::Error) << "jnt_trq_cmd_ :\n" << jnt_trq_cmd_ << RTT::endlog();
 //
-//
-////        RTT::log(RTT::Error) << "jnt_trq_cmd_ :\n" << jnt_trq_cmd_ << RTT::endlog();
-////
-//        jnt_trq_cmd_ = (tmpeye77 - P) * (h) + (tmpeye77 - P) * _inertia.data * _inertia_cstr.inverse() * (- P * h + _coriolis_cstr) + _jac_cstr.transpose() * _lambda_des;
+//        jnt_trq_cmd_ = (tmpeye77 - P) * (h) + (tmpeye77 - P) * H_.data * H_cstr_.inverse() * (P H_.data qdd * + _coriolis_cstr) + _jac_cstr.transpose() * _lambda_des;
 
         //Stop external forces controller
 

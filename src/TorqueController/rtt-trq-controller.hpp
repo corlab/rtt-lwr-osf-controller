@@ -121,7 +121,8 @@ protected:
 	Eigen::VectorXd C_bar, G_bar, CG_bar;
 	Eigen::VectorXd Forces;
 
-	KDL::Jacobian _jac, _jac_dot;
+//	KDL::Jacobian _jac, _jac_dot;
+	KDL::Jacobian jac_cstr_;
 	KDL::JntArrayVel joint_position_velocity_des;
 
 	KDL::JntArray q_from_robot;
@@ -135,7 +136,8 @@ protected:
 	Eigen::MatrixXd P, P_tau;
 	Eigen::MatrixXd N;
 
-	Eigen::MatrixXd _inertia_cstr, _jac_cstr;
+
+	Eigen::MatrixXd H_cstr_, _jac_cstr;
 	Eigen::VectorXd _coriolis_cstr;
 
     Eigen::VectorXd getQFromGazebo_EIGEN();

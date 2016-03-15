@@ -24,6 +24,9 @@ public:
     Eigen::VectorXd Pi;
     Eigen::VectorXd Pf;
     Eigen::VectorXd deltaP;
+    Eigen::MatrixXd BoardRot;
+    Eigen::VectorXd BoardTransl, TipOrientation;
+
 
 };
 
