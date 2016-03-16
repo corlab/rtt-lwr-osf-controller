@@ -23,40 +23,40 @@ TaskTest::TaskTest(double _start_time, double _end_time, Eigen::VectorXd _Pi, Ei
     TipOrientation.resize(3);
 
     // board 45 degrees opposite side
-    double boardAngle_deg = 45;
-    double boardAngle_rad = boardAngle_deg / 360 * 2 * M_PI;
-    BoardRot(0,0) = cos(boardAngle_rad);
-    BoardRot(0,2) = sin(boardAngle_rad);
-    BoardRot(1,1) = 1;
-    BoardRot(2,0) = -sin(boardAngle_rad);
-    BoardRot(2,2) = cos(boardAngle_rad);
-
-    BoardTransl(0) = -0.45;
-	BoardTransl(1) = 0.0;
-	BoardTransl(2) = 0.75;//0.7;
-
-    TipOrientation(0) = 0;
-    TipOrientation(1) = -M_PI - boardAngle_rad;
-    TipOrientation(2) = 0;
-    radius = 0.15;
-
-    // board on floor
-//    double boardAngle_deg = 0;
-//	double boardAngle_rad = boardAngle_deg / 360 * 2 * M_PI;
-//	BoardRot(0,0) = cos(boardAngle_rad);
-//	BoardRot(0,2) = sin(boardAngle_rad);
-//	BoardRot(1,1) = 1;
-//	BoardRot(2,0) = -sin(boardAngle_rad);
-//	BoardRot(2,2) = cos(boardAngle_rad);
+//    double boardAngle_deg = 45;
+//    double boardAngle_rad = boardAngle_deg / 360 * 2 * M_PI;
+//    BoardRot(0,0) = cos(boardAngle_rad);
+//    BoardRot(0,2) = sin(boardAngle_rad);
+//    BoardRot(1,1) = 1;
+//    BoardRot(2,0) = -sin(boardAngle_rad);
+//    BoardRot(2,2) = cos(boardAngle_rad);
 //
-//	BoardTransl(0) = -0.45;
+//    BoardTransl(0) = -0.45;
 //	BoardTransl(1) = 0.0;
-//	BoardTransl(2) = 0.6;
+//	BoardTransl(2) = 0.75;//0.7;
 //
-//	TipOrientation(0) = 0;
-//	TipOrientation(1) = -M_PI - boardAngle_rad;
-//	TipOrientation(2) = 0;
-//	radius = 0.15;
+//    TipOrientation(0) = 0;
+//    TipOrientation(1) = -M_PI - boardAngle_rad;
+//    TipOrientation(2) = 0;
+//    radius = 0.15;
+
+    // board parallel to floor
+    double boardAngle_deg = 0;
+	double boardAngle_rad = boardAngle_deg / 360 * 2 * M_PI;
+	BoardRot(0,0) = cos(boardAngle_rad);
+	BoardRot(0,2) = sin(boardAngle_rad);
+	BoardRot(1,1) = 1;
+	BoardRot(2,0) = -sin(boardAngle_rad);
+	BoardRot(2,2) = cos(boardAngle_rad);
+
+	BoardTransl(0) = -0.55;
+	BoardTransl(1) = 0.0;
+	BoardTransl(2) = 0.5;
+
+	TipOrientation(0) = 0;
+	TipOrientation(1) = -M_PI - boardAngle_rad;
+	TipOrientation(2) = 0;
+	radius = 0.15;
 
 }
 

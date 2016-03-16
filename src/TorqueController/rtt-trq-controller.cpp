@@ -285,6 +285,7 @@ void RTTTrqController::updateHook() {
     updateDynamicsAndKinematics(currJntPos, currJntVel, currJntTrq);
     jac_cstr_ = jac_.data; //TODO
     jac_cstr_.row(0).setZero();
+    jac_cstr_.row(1).setZero();
     jac_cstr_.row(3).setZero();
     jac_cstr_.row(4).setZero();
     jac_cstr_.row(5).setZero();
@@ -408,8 +409,6 @@ void RTTTrqController::updateHook() {
         N = identity77 - jac_.data.transpose() * ( Lamda * jac_.data * M_.data );
 //        N = identity77 - jac_.data.transpose() * ( jac_.data );
         jnt_trq_cmd_Nullspace = N * tau_0;
-
-//        jnt_trq_cmd_Nullspace.setZero();
 		//Stop Khatib nullspace controller
 
 //        jnt_trq_cmd_ = jnt_trq_cmd_Motion;
@@ -432,7 +431,7 @@ void RTTTrqController::updateHook() {
 //        ref_acc = pdd_tmp.data + Kd_cart.asDiagonal()*(pd_tmp.data - curr_ee_vel) + Kp_cart.asDiagonal()*(p_tmp.data - curr_ee_pose);
 //        h = C_.data + G_.data;
 //        Forces_cstr = Lamda_cstr * ref_acc + Lamda_cstr * (jac_.data * M_cstr_.inverse() * P * h - (jac_dot_.data + jac_.data * M_cstr_.inverse() * C_cstr_)*jnt_vel_ );
-//        jnt_trq_cmd_ = P * jac_.data.transpose()*Forces_cstr;
+//        jnt_trq_cmd_Motion = P * jac_.data.transpose()*Forces_cstr;
         //Stop Khatib projected endeffector motion controller
 
 
@@ -442,10 +441,10 @@ void RTTTrqController::updateHook() {
 //        N = identity77 - jac_.data.transpose() * ((jac_.data * M_cstr.data.inverse() * P * jac_.data.transpose()).inverse() * jac_.data * M_cstr.data.inverse() * P);
 //
 //        tau_0 = Kp_joint.asDiagonal()*(q_tmp.data - jnt_pos_) - Kd_joint.asDiagonal()*(jnt_vel_) ;
-//        jnt_trq_cmd_ += P * N * tau_0;
+//        jnt_trq_cmd_Nullspace = P * N * tau_0;
 
         //Stop constrained nullspace controller
-
+//        jnt_trq_cmd_ = jnt_trq_cmd_Motion + 0.1 * jnt_trq_cmd_Nullspace;
 
         //Start external forces controller
 //        jnt_trq_cmd_ = (identity77 - P) * (h) + (identity77 - P) * M_.data * M_cstr_.inverse() * (P * M_.data * currJntAcc * + C_cstr) + jac_cstr_.transpose() * lambda_des;
