@@ -64,7 +64,7 @@ protected:
 	 * e.g. the update loop of the controller.
 	 *
 	 * Global variables that are updated:
-	 * -> mass_(H_)
+	 * -> mass_(M_)
 	 * -> G
 	 * -> C
 	 * -> jac_
@@ -100,7 +100,7 @@ protected:
 	// Contains the gravity information about the environment
 	KDL::Vector gravity_vector;
 	KDL::JntArrayVel jntPosConfigPlusJntVelConfig_q;
-	KDL::JntSpaceInertiaMatrix H_;
+	KDL::JntSpaceInertiaMatrix M_;
 	Eigen::MatrixXd mass_;
 	KDL::JntArray G_;
 	KDL::JntArray C_;

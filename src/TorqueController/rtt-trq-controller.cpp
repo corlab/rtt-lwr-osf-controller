@@ -92,7 +92,6 @@ bool RTTTrqController::configureHook() {
 
 	Lamda.resize(6, 6);
 	h.resize(6, 1);
-	F.resize(6, 1);
 
 	yD.resize(6);
 	yD(0) = 0.5;
@@ -102,39 +101,26 @@ bool RTTTrqController::configureHook() {
 	yD(4) = 0;
 	yD(5) = 0;
 
-    Eigen::VectorXd init(7), final(7);
+    Eigen::VectorXd init(DEFAULT_NR_JOINTS), final(DEFAULT_NR_JOINTS);
     Eigen::VectorXd Pi(6), Pf(6);
     init.setZero(7);
     final.setZero(7);
     Pi.resize(6);
     Pf.resize(6);
-
     Pi << 0.0, 0.0, 1.178, 0.0, 0.0, 0.0;
     Pf << -0.71, -0.23, 0.55, 0.0, 0.0, 0.0;
-
-
-
     final << 1.5708, 1.3963, 1.2217, 1.0472, 0.8727, 0.6981, 0.5236;
     start_time = 3.0;
-
     this->QP = QuinticPolynomial(this->start_time, start_time+30,init, final);
     this->_task_test = TaskTest(this->start_time, start_time+10,Pi, Pf);
 
-//    _gravity.resize(DEFAULT_NR_JOINTS);
-//    _inertia.resize(DEFAULT_NR_JOINTS);
-//    _coriolis.resize(DEFAULT_NR_JOINTS);
+    curr_ee_pose.resize(6);
+    curr_ee_vel.resize(6);
 
     q_des_Nullspace.resize(DEFAULT_NR_JOINTS);
     q_des_Nullspace.data.setZero();
-//    q_des_Nullspace(0) = 0.101942;
-//    q_des_Nullspace(1) = 0.960698;
-//	q_des_Nullspace(2) = -0.1172;
-//	q_des_Nullspace(3) = 0.371442;
-//	q_des_Nullspace(4) = 0.442573;
-//	q_des_Nullspace(5) = 2.09441;
-//	q_des_Nullspace(6) = 0.0884984;
 
-
+    //desired joint configuration for board 45 degrees and center of circle (= translation): [-0.45; 0.0; 0.75]
     q_des_Nullspace(0) = 0.1809;
     q_des_Nullspace(1) =-0.2697;
 	q_des_Nullspace(2) =-0.0999;
@@ -151,9 +137,9 @@ bool RTTTrqController::configureHook() {
     pd_tmp.resize(6);
     pdd_tmp.resize(6);
 
-    _lambda_des.resize(6);
-    _lambda_des.setConstant(0.0);
-	_lambda_des[0] = -5;
+    lambda_des.resize(6);
+    lambda_des.setConstant(0.0);
+	lambda_des[0] = -5; //desired endeffector force
 
     rne_torques.resize(DEFAULT_NR_JOINTS);
     ext_force.resize(DEFAULT_NR_JOINTS);
@@ -176,8 +162,6 @@ bool RTTTrqController::configureHook() {
     //Khatib controller:
 	Lamda.resize(6,6);
 	Lamda_cstr.resize(6,6);
-	C_bar.resize(6);
-	G_bar.resize(6);
 	CG_bar.resize(6);
 	Forces.resize(6);
 	Forces_cstr.resize(6);
@@ -205,12 +189,9 @@ bool RTTTrqController::configureHook() {
 	P.resize(DEFAULT_NR_JOINTS,DEFAULT_NR_JOINTS);
 
 
-	H_cstr_.resize(DEFAULT_NR_JOINTS,DEFAULT_NR_JOINTS);
+	M_cstr_.resize(DEFAULT_NR_JOINTS,DEFAULT_NR_JOINTS);
 	C_cstr_.resize(DEFAULT_NR_JOINTS);
 
-
-    RTT::log(RTT::Error) << "qi :\n" << init.transpose() << RTT::endlog();
-    RTT::log(RTT::Error) << "qf :\n" << final.transpose() << RTT::endlog();
     //EOP
 	l(Info) << "configured !" << endlog();
 	return true;
@@ -353,20 +334,12 @@ void RTTTrqController::updateHook() {
 //        joint_position_velocity_des.q     = q_tmp;
 //		joint_position_velocity_des.qdot  = qd_tmp;
 //
-//        id_dyn_solver->JntToMass(joint_position_velocity_des.q, H_);
+//        id_dyn_solver->JntToMass(joint_position_velocity_des.q, M_);
 //		id_dyn_solver->JntToGravity(joint_position_velocity_des.q, G_);
 //		id_dyn_solver->JntToCoriolis(joint_position_velocity_des.q, joint_position_velocity_des.qdot, C_);
         // stop open loop joint controller
 
-//
-//        //compute inertia, coriolis and gravity
-//        id_dyn_solver->JntToMass(q_from_robot, _inertia);
-//        id_dyn_solver->JntToCoriolis(q_from_robot, qd_from_robot, _coriolis);
-//        id_dyn_solver->JntToGravity(q_from_robot, _gravity);
-//
-//        //compute jacobian
-//        jnt_to_jac_solver->JntToJac(q_from_robot, _jac, kdl_chain_.getNrOfSegments());
-//        jnt_to_jac_dot_solver->JntToJacDot(joint_position_velocity, _jac_dot, kdl_chain_.getNrOfSegments());
+
 //
 //
 //        //compute velocity and position of EE
@@ -374,15 +347,30 @@ void RTTTrqController::updateHook() {
 //        jnt_to_cart_vel_solver->JntToCart(joint_position_velocity, velFrame, kdl_chain_.getNrOfSegments());
 
 
-        //convert current endeffector pose to eigen
-        Eigen::VectorXd _curr_ee_pose(6), _curr_ee_vel(6);
-        _curr_ee_pose << cartFrame.p.x(), cartFrame.p.y(), cartFrame.p.z(), cartFrame.M.GetRot().x(), cartFrame.M.GetRot().y(), cartFrame.M.GetRot().z();
-        _curr_ee_vel  << velFrame.p.v.x(), velFrame.p.v.y(), velFrame.p.v.z(), velFrame.GetFrame().M.GetRot().x(), velFrame.GetFrame().M.GetRot().y(), velFrame.GetFrame().M.GetRot().z();
-//        _curr_ee_pose << cartFrame.p.x(), cartFrame.p.y(), cartFrame.p.z(), 0.0, 0.0, 0.0;
-//        _curr_ee_vel  << velFrame.p.v.x(), velFrame.p.v.y(), velFrame.p.v.z(), 0.0, 0.0, 0.0;
+        // start convert current endeffector pose to eigen
+    	curr_ee_pose(0) = cartFrame.p.x();
+    	curr_ee_pose(1) = cartFrame.p.y();
+    	curr_ee_pose(2) = cartFrame.p.z();
+//    	curr_ee_pose(3) = 0;
+//    	curr_ee_pose(4) = 0;
+//    	curr_ee_pose(5) = 0;
+    	curr_ee_pose(3) = cartFrame.M.GetRot().x();
+    	curr_ee_pose(4) = cartFrame.M.GetRot().y();
+    	curr_ee_pose(5) = cartFrame.M.GetRot().z();
 
-//        l(Error) << "pose: " << _curr_ee_pose << RTT::endlog();
-//        l(Error) << "velo: " << _curr_ee_vel << RTT::endlog();
+    	curr_ee_vel(0) = velFrame.p.v.x();
+    	curr_ee_vel(1) = velFrame.p.v.y();
+    	curr_ee_vel(2) = velFrame.p.v.z();
+//    	curr_ee_vel(3) = 0;
+//    	curr_ee_vel(4) = 0;
+//    	curr_ee_vel(5) = 0;
+    	curr_ee_vel(3) = velFrame.GetFrame().M.GetRot().x();
+    	curr_ee_vel(4) = velFrame.GetFrame().M.GetRot().y();
+    	curr_ee_vel(5) = velFrame.GetFrame().M.GetRot().z();
+    	// stop convert current endeffector pose to eigen
+
+//        l(Error) << "pose: " << curr_ee_pose << RTT::endlog();
+//        l(Error) << "velo: " << curr_ee_vel << RTT::endlog();
 //
 //        l(Error) << "cartFrame.M.GetRot().x(): " << cartFrame.M.GetRot().x() / (2*M_PI) * 360 << RTT::endlog();
 //        l(Error) << "cartFrame.M.GetRot().y(): " << cartFrame.M.GetRot().y() / (2*M_PI) * 360<< RTT::endlog();
@@ -394,8 +382,8 @@ void RTTTrqController::updateHook() {
 //        throw "out";
 
         // start open loop joint controller
-//        jnt_trq_cmd_ = H_.data*(qdd_tmp.data-Kp_joint.asDiagonal()*(jnt_pos_ - q_tmp.data)-Kd_joint.asDiagonal()*(jnt_vel_-qd_tmp.data)) + C_.data + G_.data;
-//        jnt_trq_cmd_ = H_.data*(qdd_tmp.data) + C_.data + G_.data;
+//        jnt_trq_cmd_ = M_.data*(qdd_tmp.data-Kp_joint.asDiagonal()*(jnt_pos_ - q_tmp.data)-Kd_joint.asDiagonal()*(jnt_vel_-qd_tmp.data)) + C_.data + G_.data;
+//        jnt_trq_cmd_ = M_.data*(qdd_tmp.data) + C_.data + G_.data;
         // stop open loop joint controller
 
 
@@ -403,13 +391,13 @@ void RTTTrqController::updateHook() {
 
 
         //Start Khatib endeffector motion controller -> dennis variables
-        H_.data = H_.data + tmpeye77; // add regression for better inverse computation
-//        Lamda = (jac_.data * H_.data.inverse() * jac_.data.transpose()).inverse();
-        Lamda = (jac_.data * H_.data.inverse() * jac_.data.transpose() + tmpeye66).inverse(); //add regression for better inverse computation
+        M_.data = M_.data + tmpeye77; // add regression for better inverse computation
+//        Lamda = (jac_.data * M_.data.inverse() * jac_.data.transpose()).inverse();
+        Lamda = (jac_.data * M_.data.inverse() * jac_.data.transpose() + tmpeye66).inverse(); //add regression for better inverse computation
         h = C_.data + G_.data;
-        CG_bar = Lamda*(jac_.data * H_.data.inverse() * (h) - jac_dot_.data * jnt_vel_);
+        CG_bar = Lamda*(jac_.data * M_.data.inverse() * (h) - jac_dot_.data * jnt_vel_);
 
-        ref_acc = pdd_tmp.data + Kd_cart.asDiagonal()*(pd_tmp.data - _curr_ee_vel) + Kp_cart.asDiagonal()*(p_tmp.data - _curr_ee_pose);
+        ref_acc = pdd_tmp.data + Kd_cart.asDiagonal()*(pd_tmp.data - curr_ee_vel) + Kp_cart.asDiagonal()*(p_tmp.data - curr_ee_pose);
         Forces  = Lamda * ref_acc + CG_bar;
         jnt_trq_cmd_Motion = jac_.data.transpose()*Forces;
         //Stop Khatib endeffector motion controller
@@ -417,7 +405,7 @@ void RTTTrqController::updateHook() {
 
         //Start Khatib nullspace controller
         tau_0 = Kp_joint.asDiagonal()*(q_des_Nullspace.data - jnt_pos_) - Kd_joint.asDiagonal()*(jnt_vel_);
-        N = identity77 - jac_.data.transpose() * ( Lamda * jac_.data * H_.data );
+        N = identity77 - jac_.data.transpose() * ( Lamda * jac_.data * M_.data );
 //        N = identity77 - jac_.data.transpose() * ( jac_.data );
         jnt_trq_cmd_Nullspace = N * tau_0;
 
@@ -435,15 +423,15 @@ void RTTTrqController::updateHook() {
         //compute constrained projection
 //        jac_cstr_MPI = (jac_cstr_.transpose() * jac_cstr_).inverse() * jac_cstr_.transpose();
 //        P = identity77 - (jac_cstr_MPI * jac_cstr_);
-//        H_cstr_ = P * H_.data +  identity77 - P;
+//        M_cstr_ = P * M_.data +  identity77 - P;
 //		C_cstr_ = -(jac_cstr_MPI * jac_cstr_);
-//		Lamda_cstr = (jac_.data * H_cstr_.inverse() * P * jac_.data.transpose()).inverse(); //equals Lamda in paper => + tmpeye66
+//		Lamda_cstr = (jac_.data * M_cstr_.inverse() * P * jac_.data.transpose()).inverse(); //equals Lamda in paper => + tmpeye66
 
 
         //Start Khatib projected endeffector motion controller
-//        ref_acc = pdd_tmp.data + Kd_cart.asDiagonal()*(pd_tmp.data - _curr_ee_vel) + Kp_cart.asDiagonal()*(p_tmp.data - _curr_ee_pose);
+//        ref_acc = pdd_tmp.data + Kd_cart.asDiagonal()*(pd_tmp.data - curr_ee_vel) + Kp_cart.asDiagonal()*(p_tmp.data - curr_ee_pose);
 //        h = C_.data + G_.data;
-//        Forces_cstr = Lamda_cstr * ref_acc + Lamda_cstr * (jac_.data * H_cstr_.inverse() * P * h - (jac_dot_.data + jac_.data * H_cstr_.inverse() * C_cstr_)*jnt_vel_ );
+//        Forces_cstr = Lamda_cstr * ref_acc + Lamda_cstr * (jac_.data * M_cstr_.inverse() * P * h - (jac_dot_.data + jac_.data * M_cstr_.inverse() * C_cstr_)*jnt_vel_ );
 //        jnt_trq_cmd_ = P * jac_.data.transpose()*Forces_cstr;
         //Stop Khatib projected endeffector motion controller
 
@@ -451,7 +439,7 @@ void RTTTrqController::updateHook() {
 
 
         //Start constrained nullspace controller
-//        N = identity77 - jac_.data.transpose() * ((jac_.data * H_cstr.data.inverse() * P * jac_.data.transpose()).inverse() * jac_.data * H_cstr.data.inverse() * P);
+//        N = identity77 - jac_.data.transpose() * ((jac_.data * M_cstr.data.inverse() * P * jac_.data.transpose()).inverse() * jac_.data * M_cstr.data.inverse() * P);
 //
 //        tau_0 = Kp_joint.asDiagonal()*(q_tmp.data - jnt_pos_) - Kd_joint.asDiagonal()*(jnt_vel_) ;
 //        jnt_trq_cmd_ += P * N * tau_0;
@@ -460,7 +448,7 @@ void RTTTrqController::updateHook() {
 
 
         //Start external forces controller
-//        jnt_trq_cmd_ = (identity77 - P) * (h) + (identity77 - P) * H_.data * H_cstr_.inverse() * (P * H_.data * currJntAcc * + C_cstr) + jac_cstr_.transpose() * _lambda_des;
+//        jnt_trq_cmd_ = (identity77 - P) * (h) + (identity77 - P) * M_.data * M_cstr_.inverse() * (P * M_.data * currJntAcc * + C_cstr) + jac_cstr_.transpose() * lambda_des;
 
         //Stop external forces controller
 

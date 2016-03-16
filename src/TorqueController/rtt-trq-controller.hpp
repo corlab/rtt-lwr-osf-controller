@@ -93,7 +93,6 @@ protected:
     Eigen::VectorXd kg_;
 
 	Eigen::VectorXd h;
-	Eigen::VectorXd F;
 
 	TaskTest task_;
     JointTaskTest joint_task_;
@@ -105,9 +104,6 @@ protected:
     TaskTest          _task_test;
     Eigen::VectorXd q_p;
     double start_time;
-    KDL::JntArray _gravity;
-    KDL::JntArray _coriolis;
-    KDL::JntSpaceInertiaMatrix _inertia;
     KDL::JntArray q_des_Nullspace;
     KDL::JntArray q_tmp;
     KDL::JntArray qd_tmp;
@@ -119,10 +115,11 @@ protected:
     KDL::Wrenches ext_force;
     Eigen::VectorXd Kp_joint, Kd_joint;
     Eigen::VectorXd Kp_cart, Kd_cart;
+    Eigen::VectorXd curr_ee_pose, curr_ee_vel;
 
     //Khatib controller:
 	Eigen::MatrixXd Lamda, Lamda_cstr;
-	Eigen::VectorXd C_bar, G_bar, CG_bar;
+	Eigen::VectorXd CG_bar;
 	Eigen::VectorXd Forces, Forces_cstr;
 
 //	KDL::Jacobian _jac, _jac_dot;
@@ -138,16 +135,15 @@ protected:
 	Eigen::MatrixXd tmpeye77;
 	Eigen::MatrixXd tmpeye66;
 	Eigen::MatrixXd preLambda;
-	Eigen::VectorXd _ref_acc;
-	Eigen::VectorXd _lambda_des;
-	Eigen::MatrixXd P, P_tau;
+	Eigen::VectorXd lambda_des;
+	Eigen::MatrixXd P;
 	Eigen::MatrixXd N;
 
 	Eigen::MatrixXd identity77;
 	Eigen::MatrixXd identity66;
 
 
-	Eigen::MatrixXd H_cstr_, _jac_cstr;
+	Eigen::MatrixXd M_cstr_;
 	Eigen::VectorXd C_cstr_;
 
     Eigen::VectorXd getQFromGazebo_EIGEN();

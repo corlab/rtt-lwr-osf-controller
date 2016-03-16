@@ -31,8 +31,8 @@ bool RTTArmControllerBase::updateDynamicsAndKinematics(
 
 	/* ### execute solvers for inv.Dynamics */
 	// calculate matrices H (inertia),C(coriolis) and G(gravitation)
-	id_dyn_solver->JntToMass(jntPosConfigPlusJntVelConfig_q.q, H_);
-	mass_ = H_.data;
+	id_dyn_solver->JntToMass(jntPosConfigPlusJntVelConfig_q.q, M_);
+	mass_ = M_.data;
 
 	id_dyn_solver->JntToGravity(jntPosConfigPlusJntVelConfig_q.q, G_);
 	id_dyn_solver->JntToCoriolis(jntPosConfigPlusJntVelConfig_q.q, jntPosConfigPlusJntVelConfig_q.qdot, C_);
@@ -63,7 +63,7 @@ void RTTArmControllerBase::initKDLTools() {
 	jac_.data.setZero();
 	mass_.resize(DEFAULT_NR_JOINTS, DEFAULT_NR_JOINTS);
 	mass_.setZero();
-	H_.resize(DEFAULT_NR_JOINTS);
+	M_.resize(DEFAULT_NR_JOINTS);
 	jnt_pos_.resize(DEFAULT_NR_JOINTS);
 	jnt_pos_.setZero();
 	jnt_vel_.resize(DEFAULT_NR_JOINTS);
