@@ -83,9 +83,12 @@ bool RTTTrqController::configureHook() {
 
 	initKDLTools();
 	jnt_trq_cmd_.resize(kdl_chain_.getNrOfJoints());
-	jnt_trq_cmd_Motion.resize(kdl_chain_.getNrOfJoints());
-	jnt_trq_cmd_Nullspace.resize(kdl_chain_.getNrOfJoints());
-	jnt_trq_cmd_Force.resize(kdl_chain_.getNrOfJoints());
+	jnt_trq_cmd_Motion_Khatib.resize(kdl_chain_.getNrOfJoints());
+	jnt_trq_cmd_Nullspace_Khatib.resize(kdl_chain_.getNrOfJoints());
+	jnt_trq_cmd_Force_Khatib.resize(kdl_chain_.getNrOfJoints());
+	jnt_trq_cmd_Motion_Projected.resize(kdl_chain_.getNrOfJoints());
+	jnt_trq_cmd_Nullspace_Projected.resize(kdl_chain_.getNrOfJoints());
+	jnt_trq_cmd_Force_Projected.resize(kdl_chain_.getNrOfJoints());
 	rsbCMDJntPos.resize(kdl_chain_.getNrOfJoints());
 	kg_.resize(kdl_chain_.getNrOfJoints());
 	kg_.setConstant(1.0);
@@ -101,34 +104,42 @@ bool RTTTrqController::configureHook() {
 	yD(4) = 0;
 	yD(5) = 0;
 
-    Eigen::VectorXd init(DEFAULT_NR_JOINTS), final(DEFAULT_NR_JOINTS);
-    Eigen::VectorXd Pi(6), Pf(6);
-    init.setZero(7);
-    final.setZero(7);
-    Pi.resize(6);
-    Pf.resize(6);
-    Pi << 0.0, 0.0, 1.178, 0.0, 0.0, 0.0;
-    Pf << -0.71, -0.23, 0.55, 0.0, 0.0, 0.0;
-    final << 1.5708, 1.3963, 1.2217, 1.0472, 0.8727, 0.6981, 0.5236;
-    start_time = 3.0;
-    this->QP = QuinticPolynomial(this->start_time, start_time+30,init, final);
-    this->_task_test = TaskTest(this->start_time, start_time+10,Pi, Pf);
+
 
     curr_ee_pose.resize(6);
     curr_ee_vel.resize(6);
 
-    q_des_Nullspace.resize(DEFAULT_NR_JOINTS);
+    q_des_Nullspace.resize(DEFAULT_NR_JOINTS); // points endeffector to center of circle
     q_des_Nullspace.data.setZero();
+    q_des_FirstPoint.resize(DEFAULT_NR_JOINTS); // points endeffector to first point of circle
+    q_des_FirstPoint.data.setZero();
 
     //desired joint configuration for board 45 degrees and center of circle (= translation): [-0.45; 0.0; 0.75]
-    q_des_Nullspace(0) = 0.1809;
-    q_des_Nullspace(1) =-0.2697;
-	q_des_Nullspace(2) =-0.0999;
-	q_des_Nullspace(3) =-1.2344;
-	q_des_Nullspace(4) =-0.1026;
-	q_des_Nullspace(5) = 1.1649;
-	q_des_Nullspace(6) = 0.0;
+//    q_des_Nullspace.data(0) = 0.1809;
+//    q_des_Nullspace.data(1) =-0.2697;
+//	q_des_Nullspace.data(2) =-0.0999;
+//	q_des_Nullspace.data(3) =-1.2344;
+//	q_des_Nullspace.data(4) =-0.1026;
+//	q_des_Nullspace.data(5) = 1.1649;
+//	q_des_Nullspace.data(6) = 0.0;
 
+    //desired joint configuration for board parallel to floor and center of circle (= translation): [-0.55; 0.0; 0.5]
+	q_des_Nullspace.data(0) = 0.0410;
+	q_des_Nullspace.data(1) = 0.0606;
+	q_des_Nullspace.data(2) =-0.0154;
+	q_des_Nullspace.data(3) =-1.3954;
+	q_des_Nullspace.data(4) =-0.0548;
+	q_des_Nullspace.data(5) = 1.1377;
+	q_des_Nullspace.data(6) = 0.0;
+
+    //desired joint configuration for board parallel to floor and first point of circle
+    q_des_FirstPoint.data(0) = 0.0974;
+    q_des_FirstPoint.data(1) = 0.0534;
+    q_des_FirstPoint.data(2) = 0.0872;
+    q_des_FirstPoint.data(3) =-1.5562;
+    q_des_FirstPoint.data(4) =-0.0325;
+    q_des_FirstPoint.data(5) = 1.2971;
+    q_des_FirstPoint.data(6) = 0.0;
 
     q_tmp.resize(DEFAULT_NR_JOINTS);
     qd_tmp.resize(DEFAULT_NR_JOINTS);
@@ -190,7 +201,7 @@ bool RTTTrqController::configureHook() {
 
 
 	M_cstr_.resize(DEFAULT_NR_JOINTS,DEFAULT_NR_JOINTS);
-	C_cstr_.resize(DEFAULT_NR_JOINTS);
+	C_cstr_.resize(DEFAULT_NR_JOINTS,DEFAULT_NR_JOINTS);
 
     //EOP
 	l(Info) << "configured !" << endlog();
@@ -206,6 +217,20 @@ bool RTTTrqController::startHook() {
 	l(Info) << "started !" << endlog();
 	internalStartTime = getSimulationTime();
 	last_SimulationTime = getSimulationTime();
+
+    Eigen::VectorXd init(DEFAULT_NR_JOINTS), final(DEFAULT_NR_JOINTS);
+    Eigen::VectorXd Pi(6), Pf(6);
+    init.setZero(7);
+    final.setZero(7);
+    Pi.resize(6);
+    Pf.resize(6);
+    Pi << 0.0, 0.0, 1.178, 0.0, 0.0, 0.0;
+    Pf << -0.71, -0.23, 0.55, 0.0, 0.0, 0.0;
+    final << 1.5708, 1.3963, 1.2217, 1.0472, 0.8727, 0.6981, 0.5236;
+    start_time = 5.0;
+    this->QP = QuinticPolynomial(this->start_time, start_time+30,init, final);
+    this->_task_test = TaskTest(this->start_time, start_time+10,Pi, Pf);
+
 	return true;
 
 }
@@ -284,11 +309,13 @@ void RTTTrqController::updateHook() {
 	// calculate mass(H), G, jac_ (based on velocities)
     updateDynamicsAndKinematics(currJntPos, currJntVel, currJntTrq);
     jac_cstr_ = jac_.data; //TODO
-    jac_cstr_.row(0).setZero();
-    jac_cstr_.row(1).setZero();
-    jac_cstr_.row(3).setZero();
-    jac_cstr_.row(4).setZero();
-    jac_cstr_.row(5).setZero();
+//    jac_cstr_.row(0).setZero();
+//    jac_cstr_.row(1).setZero();
+//    jac_cstr_.row(3).setZero();
+//    jac_cstr_.row(4).setZero();
+//    jac_cstr_.row(5).setZero();
+
+    jac_cstr_.row(2).setZero();
 
 
 	// read rsb position command
@@ -322,14 +349,14 @@ void RTTTrqController::updateHook() {
 
 
         //getting temps (=desired values) FOR JOINT TRAJECOTRY:
-        q_tmp.data   = QP.getQ(t);
-        qd_tmp.data  = QP.getQd(t);
-        qdd_tmp.data = QP.getQdd(t);
+        q_tmp.data   = QP.getQ(t-internalStartTime);
+        qd_tmp.data  = QP.getQd(t-internalStartTime);
+        qdd_tmp.data = QP.getQdd(t-internalStartTime);
 
         //getting temps (=desired values) FOR ENDEFFECTOR TRAJECOTRY:
-        p_tmp.data   = _task_test.getPosition(t);
-        pd_tmp.data  = _task_test.getVelocity(t);
-        pdd_tmp.data = _task_test.getAcceleration(t);
+        p_tmp.data   = _task_test.getPosition(t-internalStartTime);
+        pd_tmp.data  = _task_test.getVelocity(t-internalStartTime);
+        pdd_tmp.data = _task_test.getAcceleration(t-internalStartTime);
 
         // start open loop joint controller
 //        joint_position_velocity_des.q     = q_tmp;
@@ -347,6 +374,7 @@ void RTTTrqController::updateHook() {
 //        jnt_to_cart_pos_solver->JntToCart(joint_position_velocity.q, cartFrame, kdl_chain_.getNrOfSegments());
 //        jnt_to_cart_vel_solver->JntToCart(joint_position_velocity, velFrame, kdl_chain_.getNrOfSegments());
 
+        M_.data = M_.data + tmpeye77; // add regression for better inverse computation
 
         // start convert current endeffector pose to eigen
     	curr_ee_pose(0) = cartFrame.p.x();
@@ -379,7 +407,8 @@ void RTTTrqController::updateHook() {
 //
 
 //        l(Error) << "jnt_pos_: " << jnt_pos_ << RTT::endlog();
-
+//    	l(Error) << "p_tmp.data: " << p_tmp.data << RTT::endlog();
+//
 //        throw "out";
 
         // start open loop joint controller
@@ -391,16 +420,13 @@ void RTTTrqController::updateHook() {
 
 
 
-        //Start Khatib endeffector motion controller -> dennis variables
-        M_.data = M_.data + tmpeye77; // add regression for better inverse computation
-//        Lamda = (jac_.data * M_.data.inverse() * jac_.data.transpose()).inverse();
+        //Start Khatib endeffector motion controller
+    	ref_acc = pdd_tmp.data + Kd_cart.asDiagonal()*(pd_tmp.data - curr_ee_vel) + Kp_cart.asDiagonal()*(p_tmp.data - curr_ee_pose);
+    	h = C_.data + G_.data;
         Lamda = (jac_.data * M_.data.inverse() * jac_.data.transpose() + tmpeye66).inverse(); //add regression for better inverse computation
-        h = C_.data + G_.data;
         CG_bar = Lamda*(jac_.data * M_.data.inverse() * (h) - jac_dot_.data * jnt_vel_);
-
-        ref_acc = pdd_tmp.data + Kd_cart.asDiagonal()*(pd_tmp.data - curr_ee_vel) + Kp_cart.asDiagonal()*(p_tmp.data - curr_ee_pose);
         Forces  = Lamda * ref_acc + CG_bar;
-        jnt_trq_cmd_Motion = jac_.data.transpose()*Forces;
+        jnt_trq_cmd_Motion_Khatib = jac_.data.transpose()*Forces;
         //Stop Khatib endeffector motion controller
 
 
@@ -408,43 +434,53 @@ void RTTTrqController::updateHook() {
         tau_0 = Kp_joint.asDiagonal()*(q_des_Nullspace.data - jnt_pos_) - Kd_joint.asDiagonal()*(jnt_vel_);
         N = identity77 - jac_.data.transpose() * ( Lamda * jac_.data * M_.data );
 //        N = identity77 - jac_.data.transpose() * ( jac_.data );
-        jnt_trq_cmd_Nullspace = N * tau_0;
+        jnt_trq_cmd_Nullspace_Khatib = N * tau_0;
 		//Stop Khatib nullspace controller
 
-//        jnt_trq_cmd_ = jnt_trq_cmd_Motion;
-        jnt_trq_cmd_ = jnt_trq_cmd_Motion + 0.1 * jnt_trq_cmd_Nullspace;
 
-//        l(Error) << "tau_0: " << tau_0 << RTT::endlog();
-//        l(Error) << "jnt_trq_cmd_Motion: " << jnt_trq_cmd_Motion << RTT::endlog();
-//        l(Error) << "jnt_trq_cmd_Nullspace: " << jnt_trq_cmd_Nullspace << RTT::endlog();
-//        throw "out";
+
+
+
+
 
         //compute constrained projection
-//        jac_cstr_MPI = (jac_cstr_.transpose() * jac_cstr_).inverse() * jac_cstr_.transpose();
-//        P = identity77 - (jac_cstr_MPI * jac_cstr_);
-//        M_cstr_ = P * M_.data +  identity77 - P;
-//		C_cstr_ = -(jac_cstr_MPI * jac_cstr_);
-//		Lamda_cstr = (jac_.data * M_cstr_.inverse() * P * jac_.data.transpose()).inverse(); //equals Lamda in paper => + tmpeye66
-
+        jac_cstr_MPI = (jac_cstr_.transpose() * jac_cstr_ + tmpeye77).inverse() * jac_cstr_.transpose();
+        P = identity77 - (jac_cstr_MPI * jac_cstr_);
+        M_cstr_ = P * M_.data +  identity77 - P;
+		C_cstr_ = -(jac_cstr_MPI * jac_cstr_);
+		Lamda_cstr = (jac_.data * M_cstr_.inverse() * P * jac_.data.transpose() + tmpeye66).inverse();
 
         //Start Khatib projected endeffector motion controller
-//        ref_acc = pdd_tmp.data + Kd_cart.asDiagonal()*(pd_tmp.data - curr_ee_vel) + Kp_cart.asDiagonal()*(p_tmp.data - curr_ee_pose);
-//        h = C_.data + G_.data;
-//        Forces_cstr = Lamda_cstr * ref_acc + Lamda_cstr * (jac_.data * M_cstr_.inverse() * P * h - (jac_dot_.data + jac_.data * M_cstr_.inverse() * C_cstr_)*jnt_vel_ );
-//        jnt_trq_cmd_Motion = P * jac_.data.transpose()*Forces_cstr;
+        ref_acc = pdd_tmp.data + Kd_cart.asDiagonal()*(pd_tmp.data - curr_ee_vel) + Kp_cart.asDiagonal()*(p_tmp.data - curr_ee_pose);
+        h = C_.data + G_.data;
+        Forces_cstr = Lamda_cstr * ref_acc + Lamda_cstr * (jac_.data * M_cstr_.inverse() * P * h - (jac_dot_.data + jac_.data * M_cstr_.inverse() * C_cstr_)*jnt_vel_ );
+        jnt_trq_cmd_Motion_Projected = P * jac_.data.transpose()*Forces_cstr;
         //Stop Khatib projected endeffector motion controller
 
 
-
-
         //Start constrained nullspace controller
-//        N = identity77 - jac_.data.transpose() * ((jac_.data * M_cstr.data.inverse() * P * jac_.data.transpose()).inverse() * jac_.data * M_cstr.data.inverse() * P);
-//
-//        tau_0 = Kp_joint.asDiagonal()*(q_tmp.data - jnt_pos_) - Kd_joint.asDiagonal()*(jnt_vel_) ;
-//        jnt_trq_cmd_Nullspace = P * N * tau_0;
-
+        tau_0 = Kp_joint.asDiagonal()*(q_des_Nullspace.data - jnt_pos_) - Kd_joint.asDiagonal()*(jnt_vel_);
+        N = identity77 - jac_.data.transpose() * ((jac_.data * M_cstr_.inverse() * P * jac_.data.transpose()).inverse() * jac_.data * M_cstr_.inverse() * P);
+        jnt_trq_cmd_Nullspace_Projected = P * N * tau_0;
         //Stop constrained nullspace controller
-//        jnt_trq_cmd_ = jnt_trq_cmd_Motion + 0.1 * jnt_trq_cmd_Nullspace;
+
+
+
+        jnt_trq_cmd_ = jnt_trq_cmd_Motion_Khatib + 0.1 * jnt_trq_cmd_Nullspace_Khatib;
+//        jnt_trq_cmd_ = jnt_trq_cmd_Motion_Projected;// + 0.1 * jnt_trq_cmd_Nullspace_Projected;
+
+//        l(Error) << "jac_cstr_: " << jac_cstr_ << RTT::endlog();
+//        l(Error) << "jac_cstr_MPI: " << jac_cstr_MPI << RTT::endlog();
+//		l(Error) << "tau_0: " << tau_0 << RTT::endlog();
+//		l(Error) << "jnt_trq_cmd_Motion_Khatib: " << jnt_trq_cmd_Motion_Khatib << RTT::endlog();
+//		l(Error) << "jnt_trq_cmd_Motion_Projected: " << jnt_trq_cmd_Motion_Projected << RTT::endlog();
+//
+//		l(Error) << "jnt_trq_cmd_Nullspace_Khatib: " << jnt_trq_cmd_Nullspace_Khatib << RTT::endlog();
+//		l(Error) << "jnt_trq_cmd_Nullspace_Projected: " << jnt_trq_cmd_Nullspace_Projected << RTT::endlog();
+
+//		if (getSimulationTime()-internalStartTime > start_time+3) {
+//			throw "out";
+//		}
 
         //Start external forces controller
 //        jnt_trq_cmd_ = (identity77 - P) * (h) + (identity77 - P) * M_.data * M_cstr_.inverse() * (P * M_.data * currJntAcc * + C_cstr) + jac_cstr_.transpose() * lambda_des;
@@ -462,8 +498,16 @@ void RTTTrqController::updateHook() {
 //        RTT::log(RTT::Error) << "qdd :\n" << qdd_tmp.data<< RTT::endlog();
 
 	} else {
-        kg_.setConstant(1); // heavily overshooting!!!! BEWARE
-        jnt_trq_cmd_ = kg_.asDiagonal() * G_.data;
+		// start gravitation compensation controller
+//        kg_.setConstant(1); // heavily overshooting!!!! BEWARE
+//        jnt_trq_cmd_ = kg_.asDiagonal() * G_.data;
+		// stop gravitation compensation controller
+
+
+		// start simple joint position controller
+        kg_.setConstant(1);
+        jnt_trq_cmd_ = G_.data + kg_.asDiagonal() * (q_des_FirstPoint.data - jnt_pos_);
+        // stop simple joint position controller
 	}
 
 //    RTT::log(RTT::Error) << "jnt_trq_cmd_ :\n" << jnt_trq_cmd_ << RTT::endlog();

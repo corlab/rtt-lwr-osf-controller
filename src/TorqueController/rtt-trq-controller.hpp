@@ -88,7 +88,10 @@ protected:
 	double last_SimulationTime;
 
 	/** ####### STORAGE FIELDS FOR CONTROLLERS ####### */
-	Eigen::VectorXd jnt_trq_cmd_, jnt_trq_cmd_Motion, jnt_trq_cmd_Nullspace, jnt_trq_cmd_Force;
+	Eigen::VectorXd jnt_trq_cmd_;
+	Eigen::VectorXd jnt_trq_cmd_Motion_Khatib, jnt_trq_cmd_Nullspace_Khatib, jnt_trq_cmd_Force_Khatib;
+	Eigen::VectorXd jnt_trq_cmd_Motion_Projected, jnt_trq_cmd_Nullspace_Projected, jnt_trq_cmd_Force_Projected;
+
 	// Control gain
     Eigen::VectorXd kg_;
 
@@ -105,6 +108,7 @@ protected:
     Eigen::VectorXd q_p;
     double start_time;
     KDL::JntArray q_des_Nullspace;
+    KDL::JntArray q_des_FirstPoint;
     KDL::JntArray q_tmp;
     KDL::JntArray qd_tmp;
     KDL::JntArray qdd_tmp;
@@ -144,7 +148,7 @@ protected:
 
 
 	Eigen::MatrixXd M_cstr_;
-	Eigen::VectorXd C_cstr_;
+	Eigen::MatrixXd C_cstr_;
 
     Eigen::VectorXd getQFromGazebo_EIGEN();
     Eigen::VectorXd getQdFromGazebo_EIGEN();
