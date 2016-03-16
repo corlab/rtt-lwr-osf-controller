@@ -88,11 +88,10 @@ protected:
 	double last_SimulationTime;
 
 	/** ####### STORAGE FIELDS FOR CONTROLLERS ####### */
-	Eigen::VectorXd jnt_trq_cmd_;
+	Eigen::VectorXd jnt_trq_cmd_, jnt_trq_cmd_Motion, jnt_trq_cmd_Nullspace, jnt_trq_cmd_Force;
 	// Control gain
     Eigen::VectorXd kg_;
 
-	Eigen::MatrixXd Lamda;
 	Eigen::VectorXd h;
 	Eigen::VectorXd F;
 
@@ -109,6 +108,7 @@ protected:
     KDL::JntArray _gravity;
     KDL::JntArray _coriolis;
     KDL::JntSpaceInertiaMatrix _inertia;
+    KDL::JntArray q_des_Nullspace;
     KDL::JntArray q_tmp;
     KDL::JntArray qd_tmp;
     KDL::JntArray qdd_tmp;
@@ -117,13 +117,13 @@ protected:
     KDL::JntArray pdd_tmp;
     KDL::JntArray rne_torques;
     KDL::Wrenches ext_force;
-    Eigen::VectorXd Kp, Kd;
+    Eigen::VectorXd Kp_joint, Kd_joint;
     Eigen::VectorXd Kp_cart, Kd_cart;
 
     //Khatib controller:
-	Eigen::MatrixXd M_bar;
+	Eigen::MatrixXd Lamda, Lamda_cstr;
 	Eigen::VectorXd C_bar, G_bar, CG_bar;
-	Eigen::VectorXd Forces;
+	Eigen::VectorXd Forces, Forces_cstr;
 
 //	KDL::Jacobian _jac, _jac_dot;
 	Eigen::MatrixXd jac_cstr_;

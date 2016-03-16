@@ -83,6 +83,9 @@ bool RTTTrqController::configureHook() {
 
 	initKDLTools();
 	jnt_trq_cmd_.resize(kdl_chain_.getNrOfJoints());
+	jnt_trq_cmd_Motion.resize(kdl_chain_.getNrOfJoints());
+	jnt_trq_cmd_Nullspace.resize(kdl_chain_.getNrOfJoints());
+	jnt_trq_cmd_Force.resize(kdl_chain_.getNrOfJoints());
 	rsbCMDJntPos.resize(kdl_chain_.getNrOfJoints());
 	kg_.resize(kdl_chain_.getNrOfJoints());
 	kg_.setConstant(1.0);
@@ -117,9 +120,29 @@ bool RTTTrqController::configureHook() {
     this->QP = QuinticPolynomial(this->start_time, start_time+30,init, final);
     this->_task_test = TaskTest(this->start_time, start_time+10,Pi, Pf);
 
-    _gravity.resize(DEFAULT_NR_JOINTS);
-    _inertia.resize(DEFAULT_NR_JOINTS);
-    _coriolis.resize(DEFAULT_NR_JOINTS);
+//    _gravity.resize(DEFAULT_NR_JOINTS);
+//    _inertia.resize(DEFAULT_NR_JOINTS);
+//    _coriolis.resize(DEFAULT_NR_JOINTS);
+
+    q_des_Nullspace.resize(DEFAULT_NR_JOINTS);
+    q_des_Nullspace.data.setZero();
+//    q_des_Nullspace(0) = 0.101942;
+//    q_des_Nullspace(1) = 0.960698;
+//	q_des_Nullspace(2) = -0.1172;
+//	q_des_Nullspace(3) = 0.371442;
+//	q_des_Nullspace(4) = 0.442573;
+//	q_des_Nullspace(5) = 2.09441;
+//	q_des_Nullspace(6) = 0.0884984;
+
+
+    q_des_Nullspace(0) = 0.1809;
+    q_des_Nullspace(1) =-0.2697;
+	q_des_Nullspace(2) =-0.0999;
+	q_des_Nullspace(3) =-1.2344;
+	q_des_Nullspace(4) =-0.1026;
+	q_des_Nullspace(5) = 1.1649;
+	q_des_Nullspace(6) = 0.0;
+
 
     q_tmp.resize(DEFAULT_NR_JOINTS);
     qd_tmp.resize(DEFAULT_NR_JOINTS);
@@ -128,12 +151,19 @@ bool RTTTrqController::configureHook() {
     pd_tmp.resize(6);
     pdd_tmp.resize(6);
 
+    _lambda_des.resize(6);
+    _lambda_des.setConstant(0.0);
+	_lambda_des[0] = -5;
+
     rne_torques.resize(DEFAULT_NR_JOINTS);
     ext_force.resize(DEFAULT_NR_JOINTS);
-    Kp.resize(DEFAULT_NR_JOINTS);
-    Kd.resize(DEFAULT_NR_JOINTS);
-    Kp.setConstant(100.0);
-    Kd.setConstant(20.0);
+
+    Kp_joint.resize(DEFAULT_NR_JOINTS);
+    Kd_joint.resize(DEFAULT_NR_JOINTS);
+//    Kp_joint.setConstant(2.0);
+//	Kd_joint.setConstant(1.4);
+    Kp_joint.setConstant(20.0);
+	Kd_joint.setConstant(6.0);
 
     Kp_cart.resize(6);
     Kd_cart.resize(6);
@@ -144,11 +174,13 @@ bool RTTTrqController::configureHook() {
     tau_0.resize(DEFAULT_NR_JOINTS);
 
     //Khatib controller:
-	M_bar.resize(6,6);
+	Lamda.resize(6,6);
+	Lamda_cstr.resize(6,6);
 	C_bar.resize(6);
 	G_bar.resize(6);
 	CG_bar.resize(6);
 	Forces.resize(6);
+	Forces_cstr.resize(6);
 
 	lastJntVel = rci::JointVelocities::create(DEFAULT_NR_JOINTS, 0.0);
 
@@ -175,7 +207,7 @@ bool RTTTrqController::configureHook() {
 
 	H_cstr_.resize(DEFAULT_NR_JOINTS,DEFAULT_NR_JOINTS);
 	C_cstr_.resize(DEFAULT_NR_JOINTS);
-	_lambda_des.resize(6);
+
 
     RTT::log(RTT::Error) << "qi :\n" << init.transpose() << RTT::endlog();
     RTT::log(RTT::Error) << "qf :\n" << final.transpose() << RTT::endlog();
@@ -236,7 +268,7 @@ KDL::JntArray   RTTTrqController::getQdFromGazebo_KDL(){
 //Eigen::MatrixXd RTTTrqController::inverseDynamicsTorques(){
 //    //This works based on the very bad idea of having "many global variables". Dependancy injection is need.
 //    //perhaps, we should make a container for dynamic model...
-//    return _inertia.data*(qdd_tmp.data-Kp.asDiagonal()*(q_from_robot.data - q_tmp.data)-Kd.asDiagonal()*(qd_from_robot.data-qd_tmp.data))
+//    return _inertia.data*(qdd_tmp.data-Kp_joint.asDiagonal()*(q_from_robot.data - q_tmp.data)-Kd_joint.asDiagonal()*(qd_from_robot.data-qd_tmp.data))
 //                 +_coriolis.data
 //                 +_gravity.data;
 
@@ -357,76 +389,77 @@ void RTTTrqController::updateHook() {
 //        l(Error) << "cartFrame.M.GetRot().z(): " << cartFrame.M.GetRot().z() / (2*M_PI) * 360 << RTT::endlog();
 //
 
+//        l(Error) << "jnt_pos_: " << jnt_pos_ << RTT::endlog();
 
 //        throw "out";
 
         // start open loop joint controller
-//        jnt_trq_cmd_ = H_.data*(qdd_tmp.data-Kp.asDiagonal()*(jnt_pos_ - q_tmp.data)-Kd.asDiagonal()*(jnt_vel_-qd_tmp.data)) + C_.data + G_.data;
+//        jnt_trq_cmd_ = H_.data*(qdd_tmp.data-Kp_joint.asDiagonal()*(jnt_pos_ - q_tmp.data)-Kd_joint.asDiagonal()*(jnt_vel_-qd_tmp.data)) + C_.data + G_.data;
 //        jnt_trq_cmd_ = H_.data*(qdd_tmp.data) + C_.data + G_.data;
         // stop open loop joint controller
 
-        //compute projection
-        jac_cstr_MPI = (jac_cstr_.transpose() * jac_cstr_).inverse() * jac_cstr_.transpose();
-        P = identity77 - (jac_cstr_MPI * jac_cstr_);
-
-//        //Start Khatib endeffector motion controller
-//        _inertia.data = _inertia.data + tmpeye77;
-////        M_bar = (_jac.data * _inertia.data.inverse() * _jac.data.transpose()).inverse(); //equals Lamda in paper
-//        M_bar = (_jac.data * _inertia.data.inverse() * _jac.data.transpose() + tmpeye66).inverse(); //equals Lamda in paper
-////        C_bar = M_bar*(_jac.data * _inertia.data.inverse() * _coriolis.data - _jac_dot.data * qd_from_robot.data);
-////        G_bar = M_bar*(_jac.data * _inertia.data.inverse() * _gravity.data);
-//        h = _coriolis.data + _gravity.data;
-//        CG_bar = M_bar*(_jac.data * _inertia.data.inverse() * (h) - _jac_dot.data * qd_from_robot.data);
-//
-//        ref_acc = pdd_tmp.data + Kd_cart.asDiagonal()*(pd_tmp.data - _curr_ee_vel) + Kp_cart.asDiagonal()*(p_tmp.data - _curr_ee_pose);
-////        Forces  = M_bar * ref_acc + C_bar + G_bar;
-//        Forces  = M_bar * ref_acc + CG_bar;
-//        jnt_trq_cmd_ = _jac.data.transpose()*Forces;
-//        //Stop Khatib endeffector motion controller
 
 
 
-        //Start Khatib endeffector motion controller
-        H_.data = H_.data + tmpeye77;
-//        M_bar = (_jac.data * _inertia.data.inverse() * _jac.data.transpose()).inverse(); //equals Lamda in paper
-        M_bar = (jac_.data * H_.data.inverse() * jac_.data.transpose() + tmpeye66).inverse(); //equals Lamda in paper
-//        C_bar = M_bar*(_jac.data * _inertia.data.inverse() * _coriolis.data - _jac_dot.data * qd_from_robot.data);
-//        G_bar = M_bar*(_jac.data * _inertia.data.inverse() * _gravity.data);
+
+        //Start Khatib endeffector motion controller -> dennis variables
+        H_.data = H_.data + tmpeye77; // add regression for better inverse computation
+//        Lamda = (jac_.data * H_.data.inverse() * jac_.data.transpose()).inverse();
+        Lamda = (jac_.data * H_.data.inverse() * jac_.data.transpose() + tmpeye66).inverse(); //add regression for better inverse computation
         h = C_.data + G_.data;
-        CG_bar = M_bar*(jac_.data * H_.data.inverse() * (h) - jac_dot_.data * jnt_vel_);
+        CG_bar = Lamda*(jac_.data * H_.data.inverse() * (h) - jac_dot_.data * jnt_vel_);
 
         ref_acc = pdd_tmp.data + Kd_cart.asDiagonal()*(pd_tmp.data - _curr_ee_vel) + Kp_cart.asDiagonal()*(p_tmp.data - _curr_ee_pose);
-//        Forces  = M_bar * ref_acc + C_bar + G_bar;
-        Forces  = M_bar * ref_acc + CG_bar;
-        jnt_trq_cmd_ = P * jac_.data.transpose()*Forces;
+        Forces  = Lamda * ref_acc + CG_bar;
+        jnt_trq_cmd_Motion = jac_.data.transpose()*Forces;
         //Stop Khatib endeffector motion controller
 
 
-        //Start nullspace controller
+        //Start Khatib nullspace controller
+        tau_0 = Kp_joint.asDiagonal()*(q_des_Nullspace.data - jnt_pos_) - Kd_joint.asDiagonal()*(jnt_vel_);
+        N = identity77 - jac_.data.transpose() * ( Lamda * jac_.data * H_.data );
+//        N = identity77 - jac_.data.transpose() * ( jac_.data );
+        jnt_trq_cmd_Nullspace = N * tau_0;
 
-//        H_cstr.data = P * H_.data +  identity77 - P;
-//
-//        C_cstr = -(jac_cstr_MPI * jac_cstr.data);
+//        jnt_trq_cmd_Nullspace.setZero();
+		//Stop Khatib nullspace controller
+
+//        jnt_trq_cmd_ = jnt_trq_cmd_Motion;
+        jnt_trq_cmd_ = jnt_trq_cmd_Motion + 0.1 * jnt_trq_cmd_Nullspace;
+
+//        l(Error) << "tau_0: " << tau_0 << RTT::endlog();
+//        l(Error) << "jnt_trq_cmd_Motion: " << jnt_trq_cmd_Motion << RTT::endlog();
+//        l(Error) << "jnt_trq_cmd_Nullspace: " << jnt_trq_cmd_Nullspace << RTT::endlog();
+//        throw "out";
+
+        //compute constrained projection
+//        jac_cstr_MPI = (jac_cstr_.transpose() * jac_cstr_).inverse() * jac_cstr_.transpose();
+//        P = identity77 - (jac_cstr_MPI * jac_cstr_);
+//        H_cstr_ = P * H_.data +  identity77 - P;
+//		C_cstr_ = -(jac_cstr_MPI * jac_cstr_);
+//		Lamda_cstr = (jac_.data * H_cstr_.inverse() * P * jac_.data.transpose()).inverse(); //equals Lamda in paper => + tmpeye66
+
+
+        //Start Khatib projected endeffector motion controller
+//        ref_acc = pdd_tmp.data + Kd_cart.asDiagonal()*(pd_tmp.data - _curr_ee_vel) + Kp_cart.asDiagonal()*(p_tmp.data - _curr_ee_pose);
+//        h = C_.data + G_.data;
+//        Forces_cstr = Lamda_cstr * ref_acc + Lamda_cstr * (jac_.data * H_cstr_.inverse() * P * h - (jac_dot_.data + jac_.data * H_cstr_.inverse() * C_cstr_)*jnt_vel_ );
+//        jnt_trq_cmd_ = P * jac_.data.transpose()*Forces_cstr;
+        //Stop Khatib projected endeffector motion controller
+
+
+
+
+        //Start constrained nullspace controller
 //        N = identity77 - jac_.data.transpose() * ((jac_.data * H_cstr.data.inverse() * P * jac_.data.transpose()).inverse() * jac_.data * H_cstr.data.inverse() * P);
 //
-//        tau_0 = Kp.asDiagonal()*(q_tmp.data - jnt_pos_) - Kd.asDiagonal()*(jnt_vel_) ;
+//        tau_0 = Kp_joint.asDiagonal()*(q_tmp.data - jnt_pos_) - Kd_joint.asDiagonal()*(jnt_vel_) ;
 //        jnt_trq_cmd_ += P * N * tau_0;
 
-        //Stop nullspace controller
+        //Stop constrained nullspace controller
 
 
         //Start external forces controller
-
-//        P_tau = P;
-
-
-//
-//        C_cstr = _coriolis.data;
-//
-//
-//        _lambda_des.setConstant(0.0);
-//        _lambda_des[0] = -5;
-//
 //        jnt_trq_cmd_ = (identity77 - P) * (h) + (identity77 - P) * H_.data * H_cstr_.inverse() * (P * H_.data * currJntAcc * + C_cstr) + jac_cstr_.transpose() * _lambda_des;
 
         //Stop external forces controller
@@ -434,7 +467,7 @@ void RTTTrqController::updateHook() {
 
 
         /* Inverse dynamic controller M+C+G=t. This controller works. DON"T TOUCH!
-        jnt_trq_cmd_ = _inertia.data*(qdd_tmp.data-Kp.asDiagonal()*(q_from_robot.data - q_tmp.data)-Kd.asDiagonal()*(qd_from_robot.data-qd_tmp.data))
+        jnt_trq_cmd_ = _inertia.data*(qdd_tmp.data-Kp_joint.asDiagonal()*(q_from_robot.data - q_tmp.data)-Kd_joint.asDiagonal()*(qd_from_robot.data-qd_tmp.data))
                      +_coriolis.data
                      +_gravity.data;
         */
