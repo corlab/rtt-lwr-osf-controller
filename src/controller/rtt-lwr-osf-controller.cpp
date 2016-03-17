@@ -15,6 +15,8 @@ using namespace rci;
 
 #define l(lvl) log(lvl) << "[" << this->getName() << "] "
 
+// starting clean-up
+
 bool once = true;
 
 void incomingRCIJointAnglesFromRSB(rci::JointAnglesPtr jAngles) {
