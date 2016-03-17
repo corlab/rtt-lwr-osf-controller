@@ -22,7 +22,7 @@ include_directories(include
 # Creates a component library libmyrobot-<target>.so
 # and installs in the directory lib/orocos/myrobot/
 #
-orocos_component(RTTController rtt-controller-component.hpp rtt-controller-component.cpp TorqueController/rtt-trq-controller.cpp TorqueController/rtt-trq-controller.hpp parsertools/KDLParser.cpp parsertools/KDLParser.hpp baseclasses/RTTArmControllerBase.cpp baseclasses/RTTArmControllerBase.hpp TorqueController/TaskTest.cpp TorqueController/TaskTest.hpp TorqueController/JointTaskTest.hpp TorqueController/JointTaskTest.cpp TorqueController/QuinticPolynomial.hpp TorqueController/QuinticPolynomial.cpp)
+orocos_component(RTTController controller/rtt-lwr-osf-controller.cpp controller/rtt-lwr-osf-controller.hpp parsertools/KDLParser.cpp parsertools/KDLParser.hpp baseclasses/RTTArmControllerBase.cpp baseclasses/RTTArmControllerBase.hpp controller/TaskTest.cpp controller/TaskTest.hpp controller/JointTaskTest.hpp controller/JointTaskTest.cpp controller/QuinticPolynomial.hpp controller/QuinticPolynomial.cpp)
 #
 # You may add multiple orocos_component statements.
 

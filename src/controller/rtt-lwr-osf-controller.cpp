@@ -3,7 +3,7 @@
 #include <nemo/Vector.h>
 #include <nemo/Mapping.h>
 #include <rtt/Activity.hpp>
-#include "rtt-trq-controller.hpp"
+#include "rtt-lwr-osf-controller.hpp"
 
 #include <kdl/frames_io.hpp>
 #include <kdl/kinfam_io.hpp>
@@ -25,7 +25,7 @@ void incomingRCIJointAnglesFromRSB(rci::JointAnglesPtr jAngles) {
 	}
 }
 
-RTTTrqController::RTTTrqController(std::string const& name) :
+RttLwrOSFController::RttLwrOSFController(std::string const& name) :
 		RTTArmControllerBase(name, "lwr_arm_base_link", "lwr_arm_7_link", 7),
 		// Name, initial value
 		cmdJntPos_Port("cmdJntPos", 0.0), cmdJntTrq_Port("cmdJntTrq", 0.0), currJntPos_Port(
@@ -72,14 +72,14 @@ RTTTrqController::RTTTrqController(std::string const& name) :
 			nemo::RealVector(nemo::dim(7), 0.0));
 	currJntTrq = rci::JointTorques::fromNm(nemo::RealVector(nemo::dim(7), 0.0));
 
-	this->addOperation("parseURDFforKDL", &RTTTrqController::parseURDFforKDL,
+	this->addOperation("parseURDFforKDL", &RttLwrOSFController::parseURDFforKDL,
 			this, OwnThread).doc("Parses a URDF string to create a KDL::Tree.").arg(
 			"urdfString", "URDF string to parse.");
 
 	l(Info) << "constructed !" << endlog();
 }
 
-bool RTTTrqController::configureHook() {
+bool RttLwrOSFController::configureHook() {
 
 	initKDLTools();
 	jnt_trq_cmd_.resize(kdl_chain_.getNrOfJoints());
@@ -208,7 +208,7 @@ bool RTTTrqController::configureHook() {
 	return true;
 }
 
-bool RTTTrqController::startHook() {
+bool RttLwrOSFController::startHook() {
 	if (!this->isConfigured()) {
 		l(Error) << "Not configured yet: Needs to be configured first!"
 				<< endlog();
@@ -237,13 +237,13 @@ bool RTTTrqController::startHook() {
 
 double rtt_time_ = 0.0;
 
-double RTTTrqController::getSimulationTime(){
+double RttLwrOSFController::getSimulationTime(){
     return 1E-9
             * RTT::os::TimeService::ticks2nsecs(
                     RTT::os::TimeService::Instance()->getTicks());
 }
 
-Eigen::VectorXd RTTTrqController::getQFromGazebo_EIGEN(){
+Eigen::VectorXd RttLwrOSFController::getQFromGazebo_EIGEN(){
     Eigen::VectorXd tmp_q(7);
     for (int i = 0; i < 7; i++) {
         tmp_q(i)  = currJntPos->radVector()[i];
@@ -251,7 +251,7 @@ Eigen::VectorXd RTTTrqController::getQFromGazebo_EIGEN(){
     return tmp_q;
 }
 
-Eigen::VectorXd RTTTrqController::getQdFromGazebo_EIGEN(){
+Eigen::VectorXd RttLwrOSFController::getQdFromGazebo_EIGEN(){
     Eigen::VectorXd tmp_qd(7);
     for (int i = 0; i < 7; i++) {
         tmp_qd(i)  = currJntVel->rad_sVector()[i];
@@ -259,19 +259,19 @@ Eigen::VectorXd RTTTrqController::getQdFromGazebo_EIGEN(){
     return tmp_qd;
 }
 
-KDL::JntArray   RTTTrqController::getQFromGazebo_KDL(){
+KDL::JntArray   RttLwrOSFController::getQFromGazebo_KDL(){
     KDL::JntArray q_from_robot;
     q_from_robot.data = getQFromGazebo_EIGEN();
     return q_from_robot;
 }
 
-KDL::JntArray   RTTTrqController::getQdFromGazebo_KDL(){
+KDL::JntArray   RttLwrOSFController::getQdFromGazebo_KDL(){
     KDL::JntArray qd_from_robot;
     qd_from_robot.data = getQdFromGazebo_EIGEN();
     return qd_from_robot;
 }
 
-//Eigen::MatrixXd RTTTrqController::inverseDynamicsTorques(){
+//Eigen::MatrixXd RttLwrOSFController::inverseDynamicsTorques(){
 //    //This works based on the very bad idea of having "many global variables". Dependancy injection is need.
 //    //perhaps, we should make a container for dynamic model...
 //    return _inertia.data*(qdd_tmp.data-Kp_joint.asDiagonal()*(q_from_robot.data - q_tmp.data)-Kd_joint.asDiagonal()*(qd_from_robot.data-qd_tmp.data))
@@ -280,7 +280,7 @@ KDL::JntArray   RTTTrqController::getQdFromGazebo_KDL(){
 
 //}
 
-void RTTTrqController::updateHook() {
+void RttLwrOSFController::updateHook() {
 	/** Read feedback from robot */
 //
 
@@ -538,11 +538,11 @@ void RTTTrqController::updateHook() {
 	lastJntVel = currJntVel;
 }
 
-void RTTTrqController::stopHook() {
+void RttLwrOSFController::stopHook() {
 	l(Info) << "executes stopping !" << endlog();
 }
 
-void RTTTrqController::cleanupHook() {
+void RttLwrOSFController::cleanupHook() {
 	initKDLTools();
 	l(Info) << "cleaning up !" << endlog();
 }
@@ -559,4 +559,5 @@ void RTTTrqController::cleanupHook() {
  * If you have put your component class
  * in a namespace, don't forget to add it here too:
  */
-ORO_LIST_COMPONENT_TYPE(RTTTrqController)
+//ORO_LIST_COMPONENT_TYPE(RttLwrOSFController)
+ORO_CREATE_COMPONENT_LIBRARY()ORO_LIST_COMPONENT_TYPE(RttLwrOSFController)

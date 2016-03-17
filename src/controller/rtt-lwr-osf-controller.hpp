@@ -1,5 +1,5 @@
-#ifndef RTT_TRQ_CONTROLLER_HPP
-#define RTT_TRQ_CONTROLLER_HPP
+#ifndef RTT_LWR_OSF_CONTROLLER_HPP
+#define RTT_LWR_OSF_CONTROLLER_HPP
 
 #include <rtt/RTT.hpp>
 #include <rtt/Port.hpp>
@@ -33,9 +33,9 @@ boost::mutex rsbcmdJointAngles_mutex;
 rci::JointAnglesPtr rsbcmdJointAngles_store;
 RTT::FlowStatus rsbCMDJntPos_Flow;
 
-class RTTTrqController: public RTTArmControllerBase {
+class RttLwrOSFController: public RTTArmControllerBase {
 public:
-	RTTTrqController(std::string const& name);
+	RttLwrOSFController(std::string const& name);
 	bool configureHook();
 	bool startHook();
 	void updateHook();
