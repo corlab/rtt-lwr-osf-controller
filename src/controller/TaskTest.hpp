@@ -16,6 +16,9 @@ public:
     Eigen::VectorXd getPosition(double time);
     Eigen::VectorXd getVelocity(double time);
     Eigen::VectorXd getAcceleration(double time);
+    Eigen::VectorXd getPositionOrientation(double time);
+    Eigen::VectorXd getVelocityOrientation(double time);
+    Eigen::VectorXd getAccelerationOrientation(double time);
 	Eigen::VectorXd getDynamicSystem(KDL::Frame& cartFrame, KDL::FrameVel& cartVelFrame, Eigen::VectorXd& yD);
     double start_time;
     double end_time;

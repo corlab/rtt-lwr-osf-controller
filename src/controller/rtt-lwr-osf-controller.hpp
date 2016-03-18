@@ -7,12 +7,14 @@
 #include <rtt/Activity.hpp>
 
 #include <Eigen/Dense>
+#include <Eigen/Geometry>
 
 #include <rci/dto/JointAngles.h>
 #include <rci/dto/JointTorques.h>
 #include <rci/dto/JointVelocities.h>
 #include <rci/dto/JointAccelerations.h>
 #include <rci/dto/JointImpedance.h>
+#include <rci/dto/CartesianPose.h>
 
 #include <rsb/Factory.h>
 #include <rsb/Listener.h>
@@ -67,6 +69,22 @@ protected:
 	rci::JointVelocitiesPtr currJntVel;
 	rci::JointVelocitiesPtr lastJntVel;
 	rci::JointAccelerationsPtr currJntAcc;
+
+	//start variables for quaternion feedback stuff
+	Eigen::VectorXd curr_ee_poseOrientation;
+	Eigen::VectorXd curr_ee_velOrientation;
+	rci::OrientationPtr desiredCartOrientation;
+	rci::OrientationPtr currCartOrientation;
+	double desiredCartOrientationQuaternionV; //could be also double
+	Eigen::Vector3d desiredCartOrientationQuaternionU;
+	double currCartOrientationQuaternionV; //could be also double
+	Eigen::Vector3d currCartOrientationQuaternionU;
+	double QuaternionProductV; //could be also double
+	Eigen::Vector3d QuaternionProductU;
+	Eigen::Vector3d QuaternionProductEuler;
+	Eigen::Vector3d ref_accOrientationEuler;
+	//stop variables for quaternion feedback stuff
+
 	/**
 	 * Hold the write value
 	 */
@@ -119,6 +137,7 @@ protected:
     KDL::Wrenches ext_force;
     Eigen::VectorXd Kp_joint, Kd_joint;
     Eigen::VectorXd Kp_cart, Kd_cart;
+    Eigen::VectorXd Kp_cartQuaternion, Kd_cartQuaternion;
     Eigen::VectorXd curr_ee_pose, curr_ee_vel;
 
     //Khatib controller:

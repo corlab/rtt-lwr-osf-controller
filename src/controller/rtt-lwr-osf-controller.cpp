@@ -148,6 +148,16 @@ bool RttLwrOSFController::configureHook() {
     pd_tmp.resize(6);
     pdd_tmp.resize(6);
 
+    //start variables for quaternion feedback stuff
+    curr_ee_poseOrientation.resize(3);
+    curr_ee_velOrientation.resize(3);
+	desiredCartOrientationQuaternionU.resize(3);
+	currCartOrientationQuaternionU.resize(3);
+	QuaternionProductU.resize(3);
+    QuaternionProductEuler.resize(3);
+    ref_accOrientationEuler.resize(3);
+    //stop variables for quaternion feedback stuff
+
     lambda_des.resize(6);
     lambda_des.setConstant(0.0);
 	lambda_des[0] = -5; //desired endeffector force
@@ -167,6 +177,12 @@ bool RttLwrOSFController::configureHook() {
 
     Kp_cart.setConstant(50.0);
     Kd_cart.setConstant(14.0);
+
+    Kp_cartQuaternion.resize(3);
+    Kd_cartQuaternion.resize(3);
+
+    Kp_cartQuaternion.setConstant(100.0);
+    Kd_cartQuaternion.setConstant(20.0);
 
     tau_0.resize(DEFAULT_NR_JOINTS);
 
@@ -416,12 +432,50 @@ void RttLwrOSFController::updateHook() {
 //        jnt_trq_cmd_ = M_.data*(qdd_tmp.data) + C_.data + G_.data;
         // stop open loop joint controller
 
+    	//start quaternion feedback stuff
+    	curr_ee_poseOrientation(0) = cartFrame.M.GetRot().x();
+		curr_ee_poseOrientation(1) = cartFrame.M.GetRot().y();
+		curr_ee_poseOrientation(2) = cartFrame.M.GetRot().z();
+		curr_ee_velOrientation(0) = velFrame.GetFrame().M.GetRot().x();
+		curr_ee_velOrientation(1) = velFrame.GetFrame().M.GetRot().y();
+		curr_ee_velOrientation(2) = velFrame.GetFrame().M.GetRot().z();
+    	desiredCartOrientation = rci::Orientation::fromEulerAngles( p_tmp.data(3), p_tmp.data(4), p_tmp.data(5) );
+    	currCartOrientation = rci::Orientation::fromEulerAngles( curr_ee_pose(3), curr_ee_pose(4), curr_ee_pose(5) );
 
+    	//get Quaternion representation
+    	desiredCartOrientationQuaternionV    = desiredCartOrientation->q0();
+    	desiredCartOrientationQuaternionU(0) = desiredCartOrientation->q1();
+    	desiredCartOrientationQuaternionU(1) = desiredCartOrientation->q2();
+    	desiredCartOrientationQuaternionU(2) = desiredCartOrientation->q3();
 
+    	currCartOrientationQuaternionV    = currCartOrientation->q0();
+    	currCartOrientationQuaternionU(0) = currCartOrientation->q1();
+    	currCartOrientationQuaternionU(1) = currCartOrientation->q2();
+    	currCartOrientationQuaternionU(2) = currCartOrientation->q3();
 
+    	// compute QuaternionProduct
+    	QuaternionProductV = 	desiredCartOrientationQuaternionV * currCartOrientationQuaternionV -
+    							desiredCartOrientationQuaternionU.transpose() * currCartOrientationQuaternionU;
+		QuaternionProductU = 	desiredCartOrientationQuaternionV * currCartOrientationQuaternionU +
+								currCartOrientationQuaternionV * desiredCartOrientationQuaternionU +
+								desiredCartOrientationQuaternionU.cross(currCartOrientationQuaternionU);
+
+		// compute log(Quaternion)
+		if(QuaternionProductU(0) == 0.0 && QuaternionProductU(1) == 0.0 && QuaternionProductU(2) == 0.0){
+			QuaternionProductEuler.setZero();
+		}
+		else{
+			QuaternionProductEuler = acos(QuaternionProductV) * QuaternionProductU / QuaternionProductU.norm(); //or use .squaredNorm() here??
+		}
+
+		ref_accOrientationEuler = Kp_cartQuaternion.asDiagonal()*2*(QuaternionProductEuler) - Kd_cartQuaternion.asDiagonal()*(curr_ee_velOrientation); // TODO: pdd_tmp.data is missing
+		//stop quaternion feedback stuff
 
         //Start Khatib endeffector motion controller
     	ref_acc = pdd_tmp.data + Kd_cart.asDiagonal()*(pd_tmp.data - curr_ee_vel) + Kp_cart.asDiagonal()*(p_tmp.data - curr_ee_pose);
+//    	ref_acc(3) = ref_accOrientationEuler(0);
+//    	ref_acc(4) = ref_accOrientationEuler(1);
+//    	ref_acc(5) = ref_accOrientationEuler(2);
     	h = C_.data + G_.data;
         Lamda = (jac_.data * M_.data.inverse() * jac_.data.transpose() + tmpeye66).inverse(); //add regression for better inverse computation
         CG_bar = Lamda*(jac_.data * M_.data.inverse() * (h) - jac_dot_.data * jnt_vel_);
@@ -510,7 +564,7 @@ void RttLwrOSFController::updateHook() {
         // stop simple joint position controller
 	}
 
-//    RTT::log(RTT::Error) << "jnt_trq_cmd_ :\n" << jnt_trq_cmd_ << RTT::endlog();
+    RTT::log(RTT::Error) << "jnt_trq_cmd_ :\n" << jnt_trq_cmd_ << RTT::endlog();
 
     Eigen::VectorXd tmp;
     tmp.resize(7);

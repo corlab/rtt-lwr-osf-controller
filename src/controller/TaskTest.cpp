@@ -94,6 +94,7 @@ Eigen::VectorXd TaskTest::getPosition(double time) {
     return ret;
 }
 
+
 Eigen::VectorXd TaskTest::getVelocity(double time) {
     Eigen::VectorXd ret(6);
 //    if (time >= end_time)
@@ -120,11 +121,13 @@ Eigen::VectorXd TaskTest::getVelocity(double time) {
     ret(0) = tmp(0);
     ret(1) = tmp(1);
     ret(2) = tmp(2);
-    ret(3) = 0;
-    ret(4) = 0;
-    ret(5) = 0;
+    ret(0) = 0;
+    ret(1) = 0;
+    ret(2) = 0;
     return ret;
 }
+
+
 
 Eigen::VectorXd TaskTest::getAcceleration(double time) {
     Eigen::VectorXd ret(6);
@@ -155,6 +158,31 @@ Eigen::VectorXd TaskTest::getAcceleration(double time) {
     ret(3) = 0;
     ret(4) = 0;
     ret(5) = 0;
+    return ret;
+}
+
+
+Eigen::VectorXd TaskTest::getPositionOrientation(double time) {
+    Eigen::VectorXd ret(3);
+    ret(0) = TipOrientation(0);
+    ret(1) = TipOrientation(1);
+    ret(2) = TipOrientation(2);
+    return ret;
+}
+
+Eigen::VectorXd TaskTest::getVelocityOrientation(double time) {
+    Eigen::VectorXd ret(3);
+    ret(0) = 0;
+    ret(1) = 0;
+    ret(2) = 0;
+    return ret;
+}
+
+Eigen::VectorXd TaskTest::getAccelerationOrientation(double time) {
+    Eigen::VectorXd ret(3);
+    ret(0) = 0;
+    ret(1) = 0;
+    ret(2) = 0;
     return ret;
 }
 
