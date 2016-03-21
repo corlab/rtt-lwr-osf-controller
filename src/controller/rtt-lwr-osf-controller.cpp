@@ -234,8 +234,9 @@ bool RttLwrOSFController::configureHook() {
     Pf << -0.71, -0.23, 0.55, 0.0, 0.0, 0.0;
     final << 1.5708, 1.3963, 1.2217, 1.0472, 0.8727, 0.6981, 0.5236;
     start_time = 5.0;
-    this->QP = QuinticPolynomial(this->start_time, start_time+30,init, final);
-    this->_task_test = TaskTest(this->start_time, start_time+10,Pi, Pf);
+//    this->QP = QuinticPolynomial(this->start_time, start_time+30,init, final);
+//    this->_task_test = TaskTest(this->start_time, start_time+10,Pi, Pf);
+    this->cart_task = CartesianSpace_CircularTask(this->start_time);
     //
 
     //EOP
@@ -340,13 +341,9 @@ void RttLwrOSFController::updateHook() {
 //        qdd_tmp.data = QP.getQdd(t-internalStartTime);
 
         //getting temps (=desired values) FOR ENDEFFECTOR TRAJECOTRY:
-//        p_tmp.data   = _task_test.getPosition(t-internalStartTime);
-//        pd_tmp.data  = _task_test.getVelocity(t-internalStartTime);
-//        pdd_tmp.data = _task_test.getAcceleration(t-internalStartTime);
-
-        _task_test.getPosition(t-internalStartTime, p_tmp.data);
-		_task_test.getVelocity(t-internalStartTime, pd_tmp.data);
-		_task_test.getAcceleration(t-internalStartTime, pdd_tmp.data);
+        cart_task.getPosition(t-internalStartTime, p_tmp.data);
+        cart_task.getVelocity(t-internalStartTime, pd_tmp.data);
+        cart_task.getAcceleration(t-internalStartTime, pdd_tmp.data);
 
         // start open loop joint controller
 //        joint_position_velocity_des.q     = q_tmp;

@@ -22,6 +22,7 @@
 #include "../baseclasses/RTTArmControllerBase.hpp"
 #include "../parsertools/KDLParser.hpp"
 
+#include "CartesianSpace_CircularTask.hpp"
 #include "TaskTest.hpp"
 #include "JointTaskTest.hpp"
 #include "QuinticPolynomial.hpp"
@@ -119,10 +120,10 @@ protected:
     JointTaskTest joint_task_;
 	Eigen::VectorXd yD;
 
-    // Pouya
     double getSimulationTime();
     QuinticPolynomial QP;
     TaskTest          _task_test;
+    CartesianSpace_CircularTask cart_task;
     Eigen::VectorXd q_p;
     double start_time;
     KDL::JntArray q_des_Nullspace;
@@ -145,7 +146,6 @@ protected:
 	Eigen::VectorXd CG_bar;
 	Eigen::VectorXd Forces, Forces_cstr;
 
-//	KDL::Jacobian _jac, _jac_dot;
 	Eigen::MatrixXd jac_cstr_;
 	Eigen::MatrixXd jac_cstr_MPI;
 	KDL::JntArrayVel joint_position_velocity_des;
