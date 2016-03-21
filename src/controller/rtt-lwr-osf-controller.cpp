@@ -219,6 +219,25 @@ bool RttLwrOSFController::configureHook() {
 	M_cstr_.resize(DEFAULT_NR_JOINTS,DEFAULT_NR_JOINTS);
 	C_cstr_.resize(DEFAULT_NR_JOINTS,DEFAULT_NR_JOINTS);
 
+
+	//from start
+	internalStartTime = getSimulationTime();
+	last_SimulationTime = getSimulationTime();
+
+    init.resize(DEFAULT_NR_JOINTS);
+    final.resize(DEFAULT_NR_JOINTS);
+    init.setZero(7);
+    final.setZero(7);
+    Pi.resize(6);
+    Pf.resize(6);
+    Pi << 0.0, 0.0, 1.178, 0.0, 0.0, 0.0;
+    Pf << -0.71, -0.23, 0.55, 0.0, 0.0, 0.0;
+    final << 1.5708, 1.3963, 1.2217, 1.0472, 0.8727, 0.6981, 0.5236;
+    start_time = 5.0;
+    this->QP = QuinticPolynomial(this->start_time, start_time+30,init, final);
+    this->_task_test = TaskTest(this->start_time, start_time+10,Pi, Pf);
+    //
+
     //EOP
 	l(Info) << "configured !" << endlog();
 	return true;
@@ -231,22 +250,6 @@ bool RttLwrOSFController::startHook() {
 		return false;
 	}
 	l(Info) << "started !" << endlog();
-	internalStartTime = getSimulationTime();
-	last_SimulationTime = getSimulationTime();
-
-    Eigen::VectorXd init(DEFAULT_NR_JOINTS), final(DEFAULT_NR_JOINTS);
-    Eigen::VectorXd Pi(6), Pf(6);
-    init.setZero(7);
-    final.setZero(7);
-    Pi.resize(6);
-    Pf.resize(6);
-    Pi << 0.0, 0.0, 1.178, 0.0, 0.0, 0.0;
-    Pf << -0.71, -0.23, 0.55, 0.0, 0.0, 0.0;
-    final << 1.5708, 1.3963, 1.2217, 1.0472, 0.8727, 0.6981, 0.5236;
-    start_time = 5.0;
-    this->QP = QuinticPolynomial(this->start_time, start_time+30,init, final);
-    this->_task_test = TaskTest(this->start_time, start_time+10,Pi, Pf);
-
 	return true;
 
 }
@@ -566,11 +569,6 @@ void RttLwrOSFController::updateHook() {
 
     RTT::log(RTT::Error) << "jnt_trq_cmd_ :\n" << jnt_trq_cmd_ << RTT::endlog();
 
-    Eigen::VectorXd tmp;
-    tmp.resize(7);
-    for (int i = 0; i < 7; i++) {
-        tmp(i) = currJntPos->radVector()[i];
-    }
 
 
 

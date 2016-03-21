@@ -151,6 +151,8 @@ protected:
 	KDL::JntArrayVel joint_position_velocity_des;
 
 	Eigen::VectorXd tau_0;
+	Eigen::VectorXd init, final;
+	Eigen::VectorXd Pi, Pf;
 
 	KDL::JntArray q_from_robot;
 	KDL::JntArray qd_from_robot;
