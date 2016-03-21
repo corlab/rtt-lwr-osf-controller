@@ -16,6 +16,7 @@ using namespace rci;
 #define l(lvl) log(lvl) << "[" << this->getName() << "] "
 
 bool once = true;
+bool use_original_khatib_controller = true;
 
 void incomingRCIJointAnglesFromRSB(rci::JointAnglesPtr jAngles) {
 	boost::mutex::scoped_lock lock(rsbcmdJointAngles_mutex);
@@ -296,15 +297,7 @@ void RttLwrOSFController::updateHook() {
 
 	// calculate mass(H), G, jac_ (based on velocities)
     updateDynamicsAndKinematics(currJntPos, currJntVel, currJntTrq);
-    jac_cstr_ = jac_.data; //TODO
-//    jac_cstr_.row(0).setZero();
-//    jac_cstr_.row(1).setZero();
-//    jac_cstr_.row(3).setZero();
-//    jac_cstr_.row(4).setZero();
-//    jac_cstr_.row(5).setZero();
-
-    jac_cstr_.row(2).setZero();
-
+    M_.data = M_.data + tmpeye77; // add regularization for better inverse computation
 
 	// read rsb position command
 	{
@@ -330,31 +323,16 @@ void RttLwrOSFController::updateHook() {
         double t = getSimulationTime();
 
 
-        //getting temps (=desired values) FOR JOINT TRAJECOTRY:
+        //getting desired values FOR JOINT TRAJECOTRY:
 //        task_q.data   = QP.getQ(t-internalStartTime);
 //        task_qd.data  = QP.getQd(t-internalStartTime);
 //        task_qdd.data = QP.getQdd(t-internalStartTime);
 
-        //getting temps (=desired values) FOR ENDEFFECTOR TRAJECOTRY:
+        //getting desired values FOR ENDEFFECTOR TRAJECOTRY:
         cart_task.getPosition(t-internalStartTime, task_p.data);
         cart_task.getVelocity(t-internalStartTime, task_pd.data);
         cart_task.getAcceleration(t-internalStartTime, task_pdd.data);
 
-        // start open loop joint controller
-//        joint_position_velocity_des.q     = task_q;
-//		joint_position_velocity_des.qdot  = task_qd;
-//
-//        id_dyn_solver->JntToMass(joint_position_velocity_des.q, M_);
-//		id_dyn_solver->JntToGravity(joint_position_velocity_des.q, G_);
-//		id_dyn_solver->JntToCoriolis(joint_position_velocity_des.q, joint_position_velocity_des.qdot, C_);
-        // stop open loop joint controller
-
-
-//        //compute velocity and position of EE
-//        jnt_to_cart_pos_solver->JntToCart(joint_position_velocity.q, cartFrame, kdl_chain_.getNrOfSegments());
-//        jnt_to_cart_vel_solver->JntToCart(joint_position_velocity, velFrame, kdl_chain_.getNrOfSegments());
-
-        M_.data = M_.data + tmpeye77; // add regression for better inverse computation
 
         // start convert current endeffector pose to eigen
     	curr_ee_pose(0) = cartFrame.p.x();
@@ -391,7 +369,7 @@ void RttLwrOSFController::updateHook() {
 //
 //        throw "out";
 
-        // start open loop joint controller
+        // start open loop joint controller (Inverse dynamic controller M+C+G=tau)
 //        jnt_trq_cmd_ = M_.data*(task_qdd.data-Kp_joint.asDiagonal()*(jnt_pos_ - task_q.data)-Kd_joint.asDiagonal()*(jnt_vel_-task_qd.data)) + C_.data + G_.data;
 //        jnt_trq_cmd_ = M_.data*(task_qdd.data) + C_.data + G_.data;
         // stop open loop joint controller
@@ -435,57 +413,68 @@ void RttLwrOSFController::updateHook() {
 		ref_accOrientationEuler = Kp_cartQuaternion.asDiagonal()*2*(QuaternionProductEuler) - Kd_cartQuaternion.asDiagonal()*(curr_ee_velOrientation); // TODO: task_pdd.data is missing
 		//stop quaternion feedback stuff
 
-        //Start Khatib endeffector motion controller
-    	ref_acc = task_pdd.data + Kd_cart.asDiagonal()*(task_pd.data - curr_ee_vel) + Kp_cart.asDiagonal()*(task_p.data - curr_ee_pose);
+
+		//compute refrence acceleration
+		ref_acc = task_pdd.data + Kd_cart.asDiagonal()*(task_pd.data - curr_ee_vel) + Kp_cart.asDiagonal()*(task_p.data - curr_ee_pose);
 //    	ref_acc(3) = ref_accOrientationEuler(0);
 //    	ref_acc(4) = ref_accOrientationEuler(1);
 //    	ref_acc(5) = ref_accOrientationEuler(2);
-    	h = C_.data + G_.data;
-        Lamda = (jac_.data * M_.data.inverse() * jac_.data.transpose() + tmpeye66).inverse(); //add regression for better inverse computation
-        CG_bar = Lamda*(jac_.data * M_.data.inverse() * (h) - jac_dot_.data * jnt_vel_);
-        Forces  = Lamda * ref_acc + CG_bar;
-        jnt_trq_cmd_Motion_Khatib = jac_.data.transpose()*Forces;
-        //Stop Khatib endeffector motion controller
+
+		if (use_original_khatib_controller){
+			//Start Khatib endeffector motion controller
+			h = C_.data + G_.data;
+			Lamda = (jac_.data * M_.data.inverse() * jac_.data.transpose() + tmpeye66).inverse(); //add regression for better inverse computation
+			CG_bar = Lamda*(jac_.data * M_.data.inverse() * (h) - jac_dot_.data * jnt_vel_);
+			Forces  = Lamda * ref_acc + CG_bar;
+			jnt_trq_cmd_Motion_Khatib = jac_.data.transpose()*Forces;
+			//Stop Khatib endeffector motion controller
 
 
-        //Start Khatib nullspace controller
-        tau_0 = Kp_joint.asDiagonal()*(q_des_Nullspace.data - jnt_pos_) - Kd_joint.asDiagonal()*(jnt_vel_);
-        N = identity77 - jac_.data.transpose() * ( Lamda * jac_.data * M_.data );
-//        N = identity77 - jac_.data.transpose() * ( jac_.data );
-        jnt_trq_cmd_Nullspace_Khatib = N * tau_0;
-		//Stop Khatib nullspace controller
+			//Start Khatib nullspace controller
+			tau_0 = Kp_joint.asDiagonal()*(q_des_Nullspace.data - jnt_pos_) - Kd_joint.asDiagonal()*(jnt_vel_);
+			N = identity77 - jac_.data.transpose() * ( Lamda * jac_.data * M_.data );
+	//        N = identity77 - jac_.data.transpose() * ( jac_.data );
+			jnt_trq_cmd_Nullspace_Khatib = N * tau_0;
+			//Stop Khatib nullspace controller
+
+			jnt_trq_cmd_ = jnt_trq_cmd_Motion_Khatib + 0.1 * jnt_trq_cmd_Nullspace_Khatib;
+		}
+		else{
+		    //compute constrained jacobian //TODO: check...
+		    jac_cstr_ = jac_.data;
+		    jac_cstr_.row(2).setZero();
+		//    jac_cstr_.row(0).setZero();
+		//    jac_cstr_.row(1).setZero();
+		//    jac_cstr_.row(3).setZero();
+		//    jac_cstr_.row(4).setZero();
+		//    jac_cstr_.row(5).setZero();
+
+		    //compute constrained projection variables
+			jac_cstr_MPI = (jac_cstr_.transpose() * jac_cstr_ + tmpeye77).inverse() * jac_cstr_.transpose();
+			P = identity77 - (jac_cstr_MPI * jac_cstr_);
+			M_cstr_ = P * M_.data +  identity77 - P;
+			C_cstr_ = -(jac_cstr_MPI * jac_cstr_);
+			Lamda_cstr = (jac_.data * M_cstr_.inverse() * P * jac_.data.transpose() + tmpeye66).inverse();
+
+			//Start Khatib projected endeffector motion controller
+			h = C_.data + G_.data;
+			Forces_cstr = Lamda_cstr * ref_acc + Lamda_cstr * (jac_.data * M_cstr_.inverse() * P * h - (jac_dot_.data + jac_.data * M_cstr_.inverse() * C_cstr_)*jnt_vel_ );
+			jnt_trq_cmd_Motion_Projected = P * jac_.data.transpose()*Forces_cstr;
+			//Stop Khatib projected endeffector motion controller
 
 
+			//Start constrained nullspace controller
+			tau_0 = Kp_joint.asDiagonal()*(q_des_Nullspace.data - jnt_pos_) - Kd_joint.asDiagonal()*(jnt_vel_);
+			N = identity77 - jac_.data.transpose() * ((jac_.data * M_cstr_.inverse() * P * jac_.data.transpose()).inverse() * jac_.data * M_cstr_.inverse() * P);
+			jnt_trq_cmd_Nullspace_Projected = P * N * tau_0;
+			//Stop constrained nullspace controller
 
+	        //Start external forces controller
+	        //jnt_trq_cmd_Force_Projected = (identity77 - P) * (h) + (identity77 - P) * M_.data * M_cstr_.inverse() * (P * M_.data * currJntAcc * + C_cstr_) + jac_cstr_.transpose() * lambda_des;
+	        //Stop external forces controller
 
-
-
-
-        //compute constrained projection
-        jac_cstr_MPI = (jac_cstr_.transpose() * jac_cstr_ + tmpeye77).inverse() * jac_cstr_.transpose();
-        P = identity77 - (jac_cstr_MPI * jac_cstr_);
-        M_cstr_ = P * M_.data +  identity77 - P;
-		C_cstr_ = -(jac_cstr_MPI * jac_cstr_);
-		Lamda_cstr = (jac_.data * M_cstr_.inverse() * P * jac_.data.transpose() + tmpeye66).inverse();
-
-        //Start Khatib projected endeffector motion controller
-        ref_acc = task_pdd.data + Kd_cart.asDiagonal()*(task_pd.data - curr_ee_vel) + Kp_cart.asDiagonal()*(task_p.data - curr_ee_pose);
-        h = C_.data + G_.data;
-        Forces_cstr = Lamda_cstr * ref_acc + Lamda_cstr * (jac_.data * M_cstr_.inverse() * P * h - (jac_dot_.data + jac_.data * M_cstr_.inverse() * C_cstr_)*jnt_vel_ );
-        jnt_trq_cmd_Motion_Projected = P * jac_.data.transpose()*Forces_cstr;
-        //Stop Khatib projected endeffector motion controller
-
-
-        //Start constrained nullspace controller
-        tau_0 = Kp_joint.asDiagonal()*(q_des_Nullspace.data - jnt_pos_) - Kd_joint.asDiagonal()*(jnt_vel_);
-        N = identity77 - jac_.data.transpose() * ((jac_.data * M_cstr_.inverse() * P * jac_.data.transpose()).inverse() * jac_.data * M_cstr_.inverse() * P);
-        jnt_trq_cmd_Nullspace_Projected = P * N * tau_0;
-        //Stop constrained nullspace controller
-
-
-
-        jnt_trq_cmd_ = jnt_trq_cmd_Motion_Khatib + 0.1 * jnt_trq_cmd_Nullspace_Khatib;
-//        jnt_trq_cmd_ = jnt_trq_cmd_Motion_Projected;// + 0.1 * jnt_trq_cmd_Nullspace_Projected;
+			jnt_trq_cmd_ = jnt_trq_cmd_Motion_Projected;// + 0.1 * jnt_trq_cmd_Nullspace_Projected; // + jnt_trq_cmd_Force_Projected
+		}
 
 //        l(Error) << "jac_cstr_: " << jac_cstr_ << RTT::endlog();
 //        l(Error) << "jac_cstr_MPI: " << jac_cstr_MPI << RTT::endlog();
@@ -500,18 +489,6 @@ void RttLwrOSFController::updateHook() {
 //			throw "out";
 //		}
 
-        //Start external forces controller
-//        jnt_trq_cmd_ = (identity77 - P) * (h) + (identity77 - P) * M_.data * M_cstr_.inverse() * (P * M_.data * currJntAcc * + C_cstr) + jac_cstr_.transpose() * lambda_des;
-
-        //Stop external forces controller
-
-
-
-        /* Inverse dynamic controller M+C+G=t. This controller works. DON"T TOUCH!
-        jnt_trq_cmd_ = _inertia.data*(task_qdd.data-Kp_joint.asDiagonal()*(q_from_robot.data - task_q.data)-Kd_joint.asDiagonal()*(qd_from_robot.data-task_qd.data))
-                     +_coriolis.data
-                     +_gravity.data;
-        */
 
 //        RTT::log(RTT::Error) << "qdd :\n" << task_qdd.data<< RTT::endlog();
 
