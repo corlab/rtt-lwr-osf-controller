@@ -141,12 +141,12 @@ bool RttLwrOSFController::configureHook() {
     q_des_FirstPoint.data(5) = 1.2971;
     q_des_FirstPoint.data(6) = 0.0;
 
-    q_tmp.resize(DEFAULT_NR_JOINTS);
-    qd_tmp.resize(DEFAULT_NR_JOINTS);
-    qdd_tmp.resize(DEFAULT_NR_JOINTS);
-    p_tmp.resize(6);
-    pd_tmp.resize(6);
-    pdd_tmp.resize(6);
+    task_q.resize(DEFAULT_NR_JOINTS);
+    task_qd.resize(DEFAULT_NR_JOINTS);
+    task_qdd.resize(DEFAULT_NR_JOINTS);
+    task_p.resize(6);
+    task_pd.resize(6);
+    task_pdd.resize(6);
 
     //start variables for quaternion feedback stuff
     curr_ee_poseOrientation.resize(3);
@@ -195,8 +195,6 @@ bool RttLwrOSFController::configureHook() {
 
 	lastJntVel = rci::JointVelocities::create(DEFAULT_NR_JOINTS, 0.0);
 
-//	_jac.resize(DEFAULT_NR_JOINTS);
-//	_jac_dot.resize(DEFAULT_NR_JOINTS);
 	jac_cstr_.resize(6, DEFAULT_NR_JOINTS);
 	jac_cstr_MPI.resize(DEFAULT_NR_JOINTS, 6);
 
@@ -214,8 +212,6 @@ bool RttLwrOSFController::configureHook() {
 	ref_acc.resize(6);
 
 	P.resize(DEFAULT_NR_JOINTS,DEFAULT_NR_JOINTS);
-
-
 	M_cstr_.resize(DEFAULT_NR_JOINTS,DEFAULT_NR_JOINTS);
 	C_cstr_.resize(DEFAULT_NR_JOINTS,DEFAULT_NR_JOINTS);
 
@@ -267,7 +263,7 @@ double RttLwrOSFController::getSimulationTime(){
 //Eigen::MatrixXd RttLwrOSFController::inverseDynamicsTorques(){
 //    //This works based on the very bad idea of having "many global variables". Dependancy injection is need.
 //    //perhaps, we should make a container for dynamic model...
-//    return _inertia.data*(qdd_tmp.data-Kp_joint.asDiagonal()*(q_from_robot.data - q_tmp.data)-Kd_joint.asDiagonal()*(qd_from_robot.data-qd_tmp.data))
+//    return _inertia.data*(task_qdd.data-Kp_joint.asDiagonal()*(q_from_robot.data - task_q.data)-Kd_joint.asDiagonal()*(qd_from_robot.data-task_qd.data))
 //                 +_coriolis.data
 //                 +_gravity.data;
 
@@ -275,7 +271,6 @@ double RttLwrOSFController::getSimulationTime(){
 
 void RttLwrOSFController::updateHook() {
 	/** Read feedback from robot */
-//
 
 	// check if port is connected
 	if (currJntPos_Port.connected()) {
@@ -336,18 +331,18 @@ void RttLwrOSFController::updateHook() {
 
 
         //getting temps (=desired values) FOR JOINT TRAJECOTRY:
-//        q_tmp.data   = QP.getQ(t-internalStartTime);
-//        qd_tmp.data  = QP.getQd(t-internalStartTime);
-//        qdd_tmp.data = QP.getQdd(t-internalStartTime);
+//        task_q.data   = QP.getQ(t-internalStartTime);
+//        task_qd.data  = QP.getQd(t-internalStartTime);
+//        task_qdd.data = QP.getQdd(t-internalStartTime);
 
         //getting temps (=desired values) FOR ENDEFFECTOR TRAJECOTRY:
-        cart_task.getPosition(t-internalStartTime, p_tmp.data);
-        cart_task.getVelocity(t-internalStartTime, pd_tmp.data);
-        cart_task.getAcceleration(t-internalStartTime, pdd_tmp.data);
+        cart_task.getPosition(t-internalStartTime, task_p.data);
+        cart_task.getVelocity(t-internalStartTime, task_pd.data);
+        cart_task.getAcceleration(t-internalStartTime, task_pdd.data);
 
         // start open loop joint controller
-//        joint_position_velocity_des.q     = q_tmp;
-//		joint_position_velocity_des.qdot  = qd_tmp;
+//        joint_position_velocity_des.q     = task_q;
+//		joint_position_velocity_des.qdot  = task_qd;
 //
 //        id_dyn_solver->JntToMass(joint_position_velocity_des.q, M_);
 //		id_dyn_solver->JntToGravity(joint_position_velocity_des.q, G_);
@@ -355,8 +350,6 @@ void RttLwrOSFController::updateHook() {
         // stop open loop joint controller
 
 
-//
-//
 //        //compute velocity and position of EE
 //        jnt_to_cart_pos_solver->JntToCart(joint_position_velocity.q, cartFrame, kdl_chain_.getNrOfSegments());
 //        jnt_to_cart_vel_solver->JntToCart(joint_position_velocity, velFrame, kdl_chain_.getNrOfSegments());
@@ -394,13 +387,13 @@ void RttLwrOSFController::updateHook() {
 //
 
 //        l(Error) << "jnt_pos_: " << jnt_pos_ << RTT::endlog();
-//    	l(Error) << "p_tmp.data: " << p_tmp.data << RTT::endlog();
+//    	l(Error) << "task_p.data: " << task_p.data << RTT::endlog();
 //
 //        throw "out";
 
         // start open loop joint controller
-//        jnt_trq_cmd_ = M_.data*(qdd_tmp.data-Kp_joint.asDiagonal()*(jnt_pos_ - q_tmp.data)-Kd_joint.asDiagonal()*(jnt_vel_-qd_tmp.data)) + C_.data + G_.data;
-//        jnt_trq_cmd_ = M_.data*(qdd_tmp.data) + C_.data + G_.data;
+//        jnt_trq_cmd_ = M_.data*(task_qdd.data-Kp_joint.asDiagonal()*(jnt_pos_ - task_q.data)-Kd_joint.asDiagonal()*(jnt_vel_-task_qd.data)) + C_.data + G_.data;
+//        jnt_trq_cmd_ = M_.data*(task_qdd.data) + C_.data + G_.data;
         // stop open loop joint controller
 
     	//start quaternion feedback stuff
@@ -410,7 +403,7 @@ void RttLwrOSFController::updateHook() {
 		curr_ee_velOrientation(0) = velFrame.GetFrame().M.GetRot().x();
 		curr_ee_velOrientation(1) = velFrame.GetFrame().M.GetRot().y();
 		curr_ee_velOrientation(2) = velFrame.GetFrame().M.GetRot().z();
-    	desiredCartOrientation = rci::Orientation::fromEulerAngles( p_tmp.data(3), p_tmp.data(4), p_tmp.data(5) );
+    	desiredCartOrientation = rci::Orientation::fromEulerAngles( task_p.data(3), task_p.data(4), task_p.data(5) );
     	currCartOrientation = rci::Orientation::fromEulerAngles( curr_ee_pose(3), curr_ee_pose(4), curr_ee_pose(5) );
 
     	//get Quaternion representation
@@ -439,11 +432,11 @@ void RttLwrOSFController::updateHook() {
 			QuaternionProductEuler = acos(QuaternionProductV) * QuaternionProductU / QuaternionProductU.norm(); //or use .squaredNorm() here??
 		}
 
-		ref_accOrientationEuler = Kp_cartQuaternion.asDiagonal()*2*(QuaternionProductEuler) - Kd_cartQuaternion.asDiagonal()*(curr_ee_velOrientation); // TODO: pdd_tmp.data is missing
+		ref_accOrientationEuler = Kp_cartQuaternion.asDiagonal()*2*(QuaternionProductEuler) - Kd_cartQuaternion.asDiagonal()*(curr_ee_velOrientation); // TODO: task_pdd.data is missing
 		//stop quaternion feedback stuff
 
         //Start Khatib endeffector motion controller
-    	ref_acc = pdd_tmp.data + Kd_cart.asDiagonal()*(pd_tmp.data - curr_ee_vel) + Kp_cart.asDiagonal()*(p_tmp.data - curr_ee_pose);
+    	ref_acc = task_pdd.data + Kd_cart.asDiagonal()*(task_pd.data - curr_ee_vel) + Kp_cart.asDiagonal()*(task_p.data - curr_ee_pose);
 //    	ref_acc(3) = ref_accOrientationEuler(0);
 //    	ref_acc(4) = ref_accOrientationEuler(1);
 //    	ref_acc(5) = ref_accOrientationEuler(2);
@@ -476,7 +469,7 @@ void RttLwrOSFController::updateHook() {
 		Lamda_cstr = (jac_.data * M_cstr_.inverse() * P * jac_.data.transpose() + tmpeye66).inverse();
 
         //Start Khatib projected endeffector motion controller
-        ref_acc = pdd_tmp.data + Kd_cart.asDiagonal()*(pd_tmp.data - curr_ee_vel) + Kp_cart.asDiagonal()*(p_tmp.data - curr_ee_pose);
+        ref_acc = task_pdd.data + Kd_cart.asDiagonal()*(task_pd.data - curr_ee_vel) + Kp_cart.asDiagonal()*(task_p.data - curr_ee_pose);
         h = C_.data + G_.data;
         Forces_cstr = Lamda_cstr * ref_acc + Lamda_cstr * (jac_.data * M_cstr_.inverse() * P * h - (jac_dot_.data + jac_.data * M_cstr_.inverse() * C_cstr_)*jnt_vel_ );
         jnt_trq_cmd_Motion_Projected = P * jac_.data.transpose()*Forces_cstr;
@@ -515,12 +508,12 @@ void RttLwrOSFController::updateHook() {
 
 
         /* Inverse dynamic controller M+C+G=t. This controller works. DON"T TOUCH!
-        jnt_trq_cmd_ = _inertia.data*(qdd_tmp.data-Kp_joint.asDiagonal()*(q_from_robot.data - q_tmp.data)-Kd_joint.asDiagonal()*(qd_from_robot.data-qd_tmp.data))
+        jnt_trq_cmd_ = _inertia.data*(task_qdd.data-Kp_joint.asDiagonal()*(q_from_robot.data - task_q.data)-Kd_joint.asDiagonal()*(qd_from_robot.data-task_qd.data))
                      +_coriolis.data
                      +_gravity.data;
         */
 
-//        RTT::log(RTT::Error) << "qdd :\n" << qdd_tmp.data<< RTT::endlog();
+//        RTT::log(RTT::Error) << "qdd :\n" << task_qdd.data<< RTT::endlog();
 
 	} else {
 		// start gravitation compensation controller

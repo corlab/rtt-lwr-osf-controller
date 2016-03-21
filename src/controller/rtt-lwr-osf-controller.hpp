@@ -128,12 +128,12 @@ protected:
     double start_time;
     KDL::JntArray q_des_Nullspace;
     KDL::JntArray q_des_FirstPoint;
-    KDL::JntArray q_tmp;
-    KDL::JntArray qd_tmp;
-    KDL::JntArray qdd_tmp;
-    KDL::JntArray p_tmp;
-    KDL::JntArray pd_tmp;
-    KDL::JntArray pdd_tmp;
+    KDL::JntArray task_q;
+    KDL::JntArray task_qd;
+    KDL::JntArray task_qdd;
+    KDL::JntArray task_p;
+    KDL::JntArray task_pd;
+    KDL::JntArray task_pdd;
     KDL::JntArray rne_torques;
     KDL::Wrenches ext_force;
     Eigen::VectorXd Kp_joint, Kd_joint;
