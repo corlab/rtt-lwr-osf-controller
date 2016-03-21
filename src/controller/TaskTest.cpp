@@ -18,6 +18,7 @@ TaskTest::TaskTest(double _start_time, double _end_time, Eigen::VectorXd _Pi, Ei
     this->Pf = _Pf;
     this->deltaP = Pf - Pi;
 
+    tmp.resize(3);
     BoardRot.resize(3,3);
     BoardTransl.resize(3);
     TipOrientation.resize(3);
@@ -61,8 +62,7 @@ TaskTest::TaskTest(double _start_time, double _end_time, Eigen::VectorXd _Pi, Ei
 }
 
 
-Eigen::VectorXd TaskTest::getPosition(double time) {
-    Eigen::VectorXd ret(6);
+void TaskTest::getPosition(double time, Eigen::VectorXd & ret) {
 //    if (time >= end_time)
 //        time = end_time;
 
@@ -79,7 +79,6 @@ Eigen::VectorXd TaskTest::getPosition(double time) {
 //    	ret(2) += 0.25* (-cos(tau)+1.0);
 //    }
 
-    Eigen::VectorXd tmp(3);
     tmp(0) = radius * cos(time-start_time);
     tmp(1) = radius * sin(time-start_time);
     tmp(2) = 0.0;
@@ -91,12 +90,13 @@ Eigen::VectorXd TaskTest::getPosition(double time) {
     ret(3) = TipOrientation(0);
     ret(4) = TipOrientation(1);
     ret(5) = TipOrientation(2);
-    return ret;
+
+//    this->getPositionTranslation(time, ret);
+//    this->getPositionOrientation(time, ret+3);
 }
 
 
-Eigen::VectorXd TaskTest::getVelocity(double time) {
-    Eigen::VectorXd ret(6);
+void TaskTest::getVelocity(double time, Eigen::VectorXd & ret) {
 //    if (time >= end_time)
 //        time = end_time;
 
@@ -112,7 +112,6 @@ Eigen::VectorXd TaskTest::getVelocity(double time) {
 //		ret(2) = 0.25 * sin(tau);
 //	}
 
-    Eigen::VectorXd tmp(3);
     tmp(0) = radius * (-1)*sin(time-start_time);
     tmp(1) = radius * cos(time-start_time);
     tmp(2) = 0.0;
@@ -124,13 +123,14 @@ Eigen::VectorXd TaskTest::getVelocity(double time) {
     ret(0) = 0;
     ret(1) = 0;
     ret(2) = 0;
-    return ret;
+
+//    this->getVelocityTranslation(time, ret);
+//    this->getVelocityOrientation(time, ret+3);
 }
 
 
 
-Eigen::VectorXd TaskTest::getAcceleration(double time) {
-    Eigen::VectorXd ret(6);
+void TaskTest::getAcceleration(double time, Eigen::VectorXd & ret) {
 //    if (time >= end_time)
 //        time = end_time;
 
@@ -146,7 +146,6 @@ Eigen::VectorXd TaskTest::getAcceleration(double time) {
 //		ret(2) = 0.25 * cos(tau);
 //    }
 
-    Eigen::VectorXd tmp(3);
     tmp(0) = radius * (-1)*cos(time-start_time);
     tmp(1) = radius * (-1)*sin(time-start_time);
 	tmp(2) = 0.0;
@@ -158,35 +157,53 @@ Eigen::VectorXd TaskTest::getAcceleration(double time) {
     ret(3) = 0;
     ret(4) = 0;
     ret(5) = 0;
-    return ret;
+
+//    this->getAccelerationTranslation(time, ret);
+//    this->getAccelerationOrientation(time, ret+3);
 }
 
+void TaskTest::getPositionTranslation(double time, Eigen::VectorXd & ret) {
+	ret(0) = radius * cos(time-start_time);
+	ret(1) = radius * sin(time-start_time);
+	ret(2) = 0.0;
+	ret = BoardRot * ret + BoardTransl;
+}
 
-Eigen::VectorXd TaskTest::getPositionOrientation(double time) {
-    Eigen::VectorXd ret(3);
+void TaskTest::getVelocityTranslation(double time, Eigen::VectorXd & ret) {
+	ret(0) = radius * (-1)*sin(time-start_time);
+	ret(1) = radius * cos(time-start_time);
+	ret(2) = 0.0;
+	ret = BoardRot * ret;
+}
+
+void TaskTest::getAccelerationTranslation(double time, Eigen::VectorXd & ret) {
+	ret(0) = radius * (-1)*cos(time-start_time);
+	ret(1) = radius * (-1)*sin(time-start_time);
+	ret(2) = 0.0;
+	ret = BoardRot * ret;
+}
+
+void TaskTest::getPositionOrientation(double time, Eigen::VectorXd & ret) {
     ret(0) = TipOrientation(0);
     ret(1) = TipOrientation(1);
     ret(2) = TipOrientation(2);
-    return ret;
 }
 
-Eigen::VectorXd TaskTest::getVelocityOrientation(double time) {
-    Eigen::VectorXd ret(3);
+void TaskTest::getVelocityOrientation(double time, Eigen::VectorXd & ret) {
     ret(0) = 0;
     ret(1) = 0;
     ret(2) = 0;
-    return ret;
 }
 
-Eigen::VectorXd TaskTest::getAccelerationOrientation(double time) {
-    Eigen::VectorXd ret(3);
+void TaskTest::getAccelerationOrientation(double time, Eigen::VectorXd & ret) {
     ret(0) = 0;
     ret(1) = 0;
     ret(2) = 0;
-    return ret;
 }
 
 Eigen::VectorXd TaskTest::getDynamicSystem(KDL::Frame& cartFrame, KDL::FrameVel& cartVelFrame, Eigen::VectorXd& yD) {
+	//TODO: don't allocate memmory here!
+
 	Eigen::MatrixXd kp(6, 6);
 	kp = 0.1 * Eigen::MatrixXd::Identity(6, 6);
 

@@ -368,14 +368,18 @@ void RttLwrOSFController::updateHook() {
 
 
         //getting temps (=desired values) FOR JOINT TRAJECOTRY:
-        q_tmp.data   = QP.getQ(t-internalStartTime);
-        qd_tmp.data  = QP.getQd(t-internalStartTime);
-        qdd_tmp.data = QP.getQdd(t-internalStartTime);
+//        q_tmp.data   = QP.getQ(t-internalStartTime);
+//        qd_tmp.data  = QP.getQd(t-internalStartTime);
+//        qdd_tmp.data = QP.getQdd(t-internalStartTime);
 
         //getting temps (=desired values) FOR ENDEFFECTOR TRAJECOTRY:
-        p_tmp.data   = _task_test.getPosition(t-internalStartTime);
-        pd_tmp.data  = _task_test.getVelocity(t-internalStartTime);
-        pdd_tmp.data = _task_test.getAcceleration(t-internalStartTime);
+//        p_tmp.data   = _task_test.getPosition(t-internalStartTime);
+//        pd_tmp.data  = _task_test.getVelocity(t-internalStartTime);
+//        pdd_tmp.data = _task_test.getAcceleration(t-internalStartTime);
+
+        _task_test.getPosition(t-internalStartTime, p_tmp.data);
+		_task_test.getVelocity(t-internalStartTime, pd_tmp.data);
+		_task_test.getAcceleration(t-internalStartTime, pdd_tmp.data);
 
         // start open loop joint controller
 //        joint_position_velocity_des.q     = q_tmp;
