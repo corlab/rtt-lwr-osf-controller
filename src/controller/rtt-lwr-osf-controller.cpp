@@ -262,33 +262,6 @@ double RttLwrOSFController::getSimulationTime(){
                     RTT::os::TimeService::Instance()->getTicks());
 }
 
-Eigen::VectorXd RttLwrOSFController::getQFromGazebo_EIGEN(){
-    Eigen::VectorXd tmp_q(7);
-    for (int i = 0; i < 7; i++) {
-        tmp_q(i)  = currJntPos->radVector()[i];
-    }
-    return tmp_q;
-}
-
-Eigen::VectorXd RttLwrOSFController::getQdFromGazebo_EIGEN(){
-    Eigen::VectorXd tmp_qd(7);
-    for (int i = 0; i < 7; i++) {
-        tmp_qd(i)  = currJntVel->rad_sVector()[i];
-    }
-    return tmp_qd;
-}
-
-KDL::JntArray   RttLwrOSFController::getQFromGazebo_KDL(){
-    KDL::JntArray q_from_robot;
-    q_from_robot.data = getQFromGazebo_EIGEN();
-    return q_from_robot;
-}
-
-KDL::JntArray   RttLwrOSFController::getQdFromGazebo_KDL(){
-    KDL::JntArray qd_from_robot;
-    qd_from_robot.data = getQdFromGazebo_EIGEN();
-    return qd_from_robot;
-}
 
 //Eigen::MatrixXd RttLwrOSFController::inverseDynamicsTorques(){
 //    //This works based on the very bad idea of having "many global variables". Dependancy injection is need.
@@ -359,12 +332,6 @@ void RttLwrOSFController::updateHook() {
 
         //getting current time
         double t = getSimulationTime();
-
-        //init
-//        _jac_dot.data.setZero();
-//		_jac.data.setZero();
-//        q_from_robot = getQFromGazebo_KDL();
-//        qd_from_robot = getQdFromGazebo_KDL();
 
 
         //getting temps (=desired values) FOR JOINT TRAJECOTRY:
