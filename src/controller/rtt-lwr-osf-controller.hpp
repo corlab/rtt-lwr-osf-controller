@@ -141,6 +141,10 @@ protected:
     Eigen::VectorXd Kp_cartQuaternion, Kd_cartQuaternion;
     Eigen::VectorXd curr_ee_pose, curr_ee_vel;
 
+    double safety_margin_Pos, safety_margin_Vel;
+    Eigen::VectorXd jointPosLimits_max, jointPosLimits_min, jointPosLimits_range, jointPosCritic_max, jointPosCritic_min;
+    Eigen::VectorXd jointVelLimits_max, jointVelLimits_min, jointVelLimits_range, jointVelCritic_max, jointVelCritic_min;
+
     //Khatib controller:
 	Eigen::MatrixXd Lamda, Lamda_cstr;
 	Eigen::VectorXd CG_bar;

@@ -83,6 +83,46 @@ RttLwrOSFController::RttLwrOSFController(std::string const& name) :
 bool RttLwrOSFController::configureHook() {
 
 	initKDLTools();
+
+
+	jointPosLimits_max.resize(DEFAULT_NR_JOINTS);
+	jointPosLimits_min.resize(DEFAULT_NR_JOINTS);
+	jointVelLimits_max.resize(DEFAULT_NR_JOINTS);
+	jointVelLimits_min.resize(DEFAULT_NR_JOINTS);
+	jointPosLimits_max << 	+2.96705972839,
+							+2.09439510239,
+							+2.96705972839,
+							+2.09439510239,
+							+2.96705972839,
+							+2.09439510239,
+							+2.96705972839;
+	jointPosLimits_min  << 	-2.96705972839,
+							-2.09439510239,
+							-2.96705972839,
+							-2.09439510239,
+							-2.96705972839,
+							-2.09439510239,
+							-2.96705972839;
+
+	safety_margin_Pos = 0.2;
+	jointPosLimits_range = jointPosLimits_max - jointPosLimits_min;
+	jointPosCritic_max = jointPosLimits_max - safety_margin_Pos*jointPosLimits_range;
+	jointPosCritic_min = jointPosLimits_min + safety_margin_Pos*jointPosLimits_range;
+
+	jointVelLimits_max << 	+1.91986217719,
+							+1.91986217719,
+							+2.26892802759,
+							+2.26892802759,
+							+2.26892802759,
+							+3.14159265359,
+							+3.14159265359;
+	jointVelLimits_min = (-1) * jointVelLimits_max;
+
+	safety_margin_Vel = 0.2;
+	jointVelLimits_range = jointVelLimits_max - jointVelLimits_min;
+	jointVelCritic_max = jointVelLimits_max - safety_margin_Vel*jointVelLimits_range;
+	jointVelCritic_min = jointVelLimits_min + safety_margin_Vel*jointVelLimits_range;
+
 	jnt_trq_cmd_.resize(kdl_chain_.getNrOfJoints());
 	jnt_trq_cmd_Motion_Khatib.resize(kdl_chain_.getNrOfJoints());
 	jnt_trq_cmd_Nullspace_Khatib.resize(kdl_chain_.getNrOfJoints());
@@ -261,15 +301,6 @@ double RttLwrOSFController::getSimulationTime(){
 }
 
 
-//Eigen::MatrixXd RttLwrOSFController::inverseDynamicsTorques(){
-//    //This works based on the very bad idea of having "many global variables". Dependancy injection is need.
-//    //perhaps, we should make a container for dynamic model...
-//    return _inertia.data*(task_qdd.data-Kp_joint.asDiagonal()*(q_from_robot.data - task_q.data)-Kd_joint.asDiagonal()*(qd_from_robot.data-task_qd.data))
-//                 +_coriolis.data
-//                 +_gravity.data;
-
-//}
-
 void RttLwrOSFController::updateHook() {
 	/** Read feedback from robot */
 
@@ -355,6 +386,25 @@ void RttLwrOSFController::updateHook() {
     	curr_ee_vel(4) = velFrame.GetFrame().M.GetRot().y();
     	curr_ee_vel(5) = velFrame.GetFrame().M.GetRot().z();
     	// stop convert current endeffector pose to eigen
+
+    	// check current configuration for violation of joint limits
+    	for (int jointnr = 0; jointnr < DEFAULT_NR_JOINTS; jointnr++) {
+    		if (jnt_pos_[jointnr] > jointPosCritic_max[jointnr]){
+    			l(Error) << "joint " << jointnr << " is close to positive joint position limit" << RTT::endlog();
+    		}
+    		else if (jnt_pos_[jointnr] < jointPosCritic_min[jointnr]){
+				l(Error) << "joint " << jointnr << " is close to negative joint position limit" << RTT::endlog();
+			}
+
+    		if (jnt_vel_[jointnr] > jointVelCritic_max[jointnr]){
+    			l(Error) << "joint " << jointnr << " is close to positive joint velocity limit" << RTT::endlog();
+    		}
+    		else if (jnt_vel_[jointnr] < jointVelCritic_min[jointnr]){
+				l(Error) << "joint " << jointnr << " is close to negative joint velocity limit" << RTT::endlog();
+			}
+    	}
+
+
 
 //        l(Error) << "pose: " << curr_ee_pose << RTT::endlog();
 //        l(Error) << "velo: " << curr_ee_vel << RTT::endlog();
@@ -515,9 +565,6 @@ void RttLwrOSFController::updateHook() {
 	for (int i = 0; i < outJntTrq->getDimension(); i++) {
 		outJntTrq->setFromNm(i, jnt_trq_cmd_.data()[i]);
 	}
-
-//	l(Warning) << "outJntTrq: " << outJntTrq->print() << endlog();
-//	l(Warning) << "G_:\n" << G_ << endlog();
 
 	// write torques to robot
 	if (cmdJntTrq_Port.connected()) {
