@@ -5,6 +5,8 @@
 #include <rtt/Port.hpp>
 #include <rtt/base/RunnableInterface.hpp>
 #include <rtt/Activity.hpp>
+#include <rtt/Property.hpp>
+#include <rtt/Attribute.hpp>
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
@@ -193,6 +195,10 @@ protected:
 
     double internalStartTime;
     bool detectedError;
+
+    // orocos attributes
+    std::vector<double> tenGains;
+    double oneGain;
 
 //    Eigen::MatrixXd inverseDynamicsTorques(KDL::JntSpaceInertiaMatrix & _inertia, KDL::JntArray & _coriolis, KDL::JntArray & _gravity, Eigen::VectorXd Kp, Kd);
     //EOP

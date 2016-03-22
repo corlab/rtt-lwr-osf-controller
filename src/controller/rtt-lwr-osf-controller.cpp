@@ -77,6 +77,14 @@ RttLwrOSFController::RttLwrOSFController(std::string const& name) :
 			this, OwnThread).doc("Parses a URDF string to create a KDL::Tree.").arg(
 			"urdfString", "URDF string to parse.");
 
+
+	// resize gains and use default values if you like
+	tenGains.resize(10);
+	oneGain = -77;
+
+	this->addProperty( "oneGain", oneGain ).doc("oneGain Example Description");
+	this->addProperty( "tenGains", tenGains ).doc("tenGains Example Description");
+
 	l(Info) << "constructed !" << endlog();
 }
 
@@ -233,7 +241,6 @@ bool RttLwrOSFController::configureHook() {
     Kp_cartOrientation.setConstant(2500.0);
 	Kd_cartOrientation.setConstant(100.0);
 
-
     tau_0.resize(DEFAULT_NR_JOINTS);
 
     //Khatib controller:
@@ -321,6 +328,13 @@ double RttLwrOSFController::getSimulationTime(){
 
 
 void RttLwrOSFController::updateHook() {
+
+	// test printout of the gains (can be removed)
+	l(Error) << "oneGain: " << oneGain << endlog();
+	for (int i = 0; i < tenGains.size(); i++) {
+		l(Error) << "tenGains[" << i << "]: " << tenGains[i] << endlog();
+	}
+
 	/** Read feedback from robot */
 
 	// check if port is connected
