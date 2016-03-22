@@ -108,40 +108,40 @@ void CartesianSpace_CircularTask::getAcceleration(double time, Eigen::VectorXd &
 //    this->getAccelerationOrientation(time, ret+3);
 }
 
-void CartesianSpace_CircularTask::getPositionTranslation(double time, Eigen::VectorXd & ret) {
+void CartesianSpace_CircularTask::getPositionTranslation(double time, Eigen::Vector3d & ret) {
 	ret(0) = radius * cos(_timescale * (time-start_time));
 	ret(1) = radius * sin(_timescale * (time-start_time));
 	ret(2) = 0.0;
 	ret = BoardRot * ret + BoardTransl;
 }
 
-void CartesianSpace_CircularTask::getVelocityTranslation(double time, Eigen::VectorXd & ret) {
+void CartesianSpace_CircularTask::getVelocityTranslation(double time, Eigen::Vector3d & ret) {
 	ret(0) = radius * (-1)*sin(_timescale * (time-start_time));
 	ret(1) = radius * cos(_timescale * (time-start_time));
 	ret(2) = 0.0;
 	ret = BoardRot * ret;
 }
 
-void CartesianSpace_CircularTask::getAccelerationTranslation(double time, Eigen::VectorXd & ret) {
+void CartesianSpace_CircularTask::getAccelerationTranslation(double time, Eigen::Vector3d & ret) {
 	ret(0) = radius * (-1)*cos(_timescale * (time-start_time));
 	ret(1) = radius * (-1)*sin(_timescale * (time-start_time));
 	ret(2) = 0.0;
 	ret = BoardRot * ret;
 }
 
-void CartesianSpace_CircularTask::getPositionOrientation(double time, Eigen::VectorXd & ret) {
+void CartesianSpace_CircularTask::getPositionOrientation(double time, Eigen::Vector3d & ret) {
     ret(0) = TipOrientation(0);
     ret(1) = TipOrientation(1);
     ret(2) = TipOrientation(2);
 }
 
-void CartesianSpace_CircularTask::getVelocityOrientation(double time, Eigen::VectorXd & ret) {
+void CartesianSpace_CircularTask::getVelocityOrientation(double time, Eigen::Vector3d & ret) {
     ret(0) = 0;
     ret(1) = 0;
     ret(2) = 0;
 }
 
-void CartesianSpace_CircularTask::getAccelerationOrientation(double time, Eigen::VectorXd & ret) {
+void CartesianSpace_CircularTask::getAccelerationOrientation(double time, Eigen::Vector3d & ret) {
     ret(0) = 0;
     ret(1) = 0;
     ret(2) = 0;

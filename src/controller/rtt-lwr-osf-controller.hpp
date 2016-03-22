@@ -30,6 +30,7 @@
 #include "JointTaskTest.hpp"
 #include "QuinticPolynomial.hpp"
 #include "FileWriterCSV.hpp"
+#include "OrientationHelper.hpp"
 
 #define DEFAULT_ROOT_LINK "lwr_arm_base_link"
 #define DEFAULT_TIP_LINK "lwr_arm_7_link"
@@ -84,7 +85,6 @@ protected:
 	double QuaternionProductV; //could be also double
 	Eigen::Vector3d QuaternionProductU;
 	Eigen::Vector3d QuaternionProductEuler;
-	Eigen::Vector3d ref_accOrientationEuler;
 	//stop variables for quaternion feedback stuff
 
 	/**
@@ -123,6 +123,7 @@ protected:
 
     double getSimulationTime();
 
+    OrientationHelper orientation_helper;
     FileWriterCSV * csv_logger;
     QuinticPolynomial QP;
     TaskTest          _task_test;
@@ -137,20 +138,21 @@ protected:
     KDL::JntArray task_p;
     KDL::JntArray task_pd;
     KDL::JntArray task_pdd;
-    KDL::JntArray task_pTranslation;
-	KDL::JntArray task_pdTranslation;
-	KDL::JntArray task_pddTranslation;
-	KDL::JntArray task_pOrientation;
-	KDL::JntArray task_pdOrientation;
-	KDL::JntArray task_pddOrientation;
+    Eigen::Vector3d task_pTranslation;
+    Eigen::Vector3d task_pdTranslation;
+    Eigen::Vector3d task_pddTranslation;
+    Eigen::Vector3d task_pOrientation;
+    Eigen::Vector3d task_pdOrientation;
+    Eigen::Vector3d task_pddOrientation;
     KDL::JntArray rne_torques;
     KDL::Wrenches ext_force;
     Eigen::VectorXd Kp_joint, Kd_joint;
     Eigen::VectorXd Kp_cartTranslation, Kd_cartTranslation;
-    Eigen::VectorXd Kp_cartOrientation, Kd_cartOrientation;
+    Eigen::VectorXd Kp_cartOrientationEuler, Kd_cartOrientationEuler;
+    Eigen::VectorXd Kp_cartOrientationQuaternion, Kd_cartOrientationQuaternion;
     Eigen::VectorXd curr_ee_pose, curr_ee_vel;
-	Eigen::VectorXd curr_ee_poseTranslation, curr_ee_poseOrientation;
-	Eigen::VectorXd curr_ee_velTranslation, curr_ee_velOrientation;
+	Eigen::Vector3d curr_ee_poseTranslation, curr_ee_poseOrientation;
+	Eigen::Vector3d curr_ee_velTranslation, curr_ee_velOrientation;
 
     double safety_margin_Pos, safety_margin_Vel;
     Eigen::VectorXd jointPosLimits_max, jointPosLimits_min, jointPosLimits_range, jointPosCritic_max, jointPosCritic_min;
@@ -201,17 +203,25 @@ protected:
 
     double Kp_cartTranslationKhatibGain;
     double Kd_cartTranslationKhatibGain;
-    double Kp_cartOrientationKhatibGain;
-    double Kd_cartOrientationKhatibGain;
+    double Kp_cartOrientationEulerKhatibGain;
+    double Kd_cartOrientationEulerKhatibGain;
+    double Kp_cartOrientationQuaternionKhatibGain;
+	double Kd_cartOrientationQuaternionKhatibGain;
     double Kp_jointKhatibGain;
     double Kd_jointKhatibGain;
 
     double Kp_cartTranslationConstrainedGain;
     double Kd_cartTranslationConstrainedGain;
-    double Kp_cartOrientationConstrainedGain;
-    double Kd_cartOrientationConstrainedGain;
+    double Kp_cartOrientationEulerConstrainedGain;
+    double Kd_cartOrientationEulerConstrainedGain;
+    double Kp_cartOrientationQuaternionConstrainedGain;
+	double Kd_cartOrientationQuaternionConstrainedGain;
     double Kp_jointConstrainedGain;
     double Kd_jointConstrainedGain;
+
+    bool use_original_khatib_controller;
+    bool use_euler_orientation;
+
 //    Eigen::MatrixXd inverseDynamicsTorques(KDL::JntSpaceInertiaMatrix & _inertia, KDL::JntArray & _coriolis, KDL::JntArray & _gravity, Eigen::VectorXd Kp, Kd);
     //EOP
 

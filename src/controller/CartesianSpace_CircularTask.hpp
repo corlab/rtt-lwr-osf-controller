@@ -16,13 +16,13 @@ public:
     void getVelocity(double time, Eigen::VectorXd & ret);
     void getAcceleration(double time, Eigen::VectorXd & ret);
 
-    void getPositionTranslation(double time, Eigen::VectorXd & ret);
-	void getVelocityTranslation(double time, Eigen::VectorXd & ret);
-	void getAccelerationTranslation(double time, Eigen::VectorXd & ret);
+    void getPositionTranslation(double time, Eigen::Vector3d & ret);
+	void getVelocityTranslation(double time, Eigen::Vector3d & ret);
+	void getAccelerationTranslation(double time, Eigen::Vector3d & ret);
 
-	void getPositionOrientation(double time, Eigen::VectorXd & ret);
-    void getVelocityOrientation(double time, Eigen::VectorXd & ret);
-    void getAccelerationOrientation(double time, Eigen::VectorXd & ret);
+	void getPositionOrientation(double time, Eigen::Vector3d & ret);
+    void getVelocityOrientation(double time, Eigen::Vector3d & ret);
+    void getAccelerationOrientation(double time, Eigen::Vector3d & ret);
 
     double radius;
     double start_time;
