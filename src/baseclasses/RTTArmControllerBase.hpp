@@ -64,9 +64,9 @@ protected:
 	 * e.g. the update loop of the controller.
 	 *
 	 * Global variables that are updated:
-	 * -> mass_(M_)
-	 * -> G
-	 * -> C
+	 * -> M_
+	 * -> G_
+	 * -> C_
 	 * -> jac_
 	 *
 	 * @jPosFb current joint positions
@@ -101,7 +101,6 @@ protected:
 	KDL::Vector gravity_vector;
 	KDL::JntArrayVel jntPosConfigPlusJntVelConfig_q;
 	KDL::JntSpaceInertiaMatrix M_;
-	Eigen::MatrixXd mass_;
 	KDL::JntArray G_;
 	KDL::JntArray C_;
 	KDL::Jacobian jac_;

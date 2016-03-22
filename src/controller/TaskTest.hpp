@@ -13,9 +13,10 @@ public:
 	~TaskTest();
     double radius;
     TaskTest(double _start_time, double _end_time, Eigen::VectorXd _Pi, Eigen::VectorXd _Pf);
-    Eigen::VectorXd getPosition(double time);
-    Eigen::VectorXd getVelocity(double time);
-    Eigen::VectorXd getAcceleration(double time);
+    void getPosition(double time, Eigen::VectorXd & ret);
+    void getVelocity(double time, Eigen::VectorXd & ret);
+    void getAcceleration(double time, Eigen::VectorXd & ret);
+
 	Eigen::VectorXd getDynamicSystem(KDL::Frame& cartFrame, KDL::FrameVel& cartVelFrame, Eigen::VectorXd& yD);
     double start_time;
     double end_time;
@@ -24,8 +25,7 @@ public:
     Eigen::VectorXd Pi;
     Eigen::VectorXd Pf;
     Eigen::VectorXd deltaP;
-    Eigen::MatrixXd BoardRot;
-    Eigen::VectorXd BoardTransl, TipOrientation;
+    Eigen::VectorXd tmp;
 
 
 };

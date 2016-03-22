@@ -5,14 +5,19 @@
 #include <rtt/Port.hpp>
 #include <rtt/base/RunnableInterface.hpp>
 #include <rtt/Activity.hpp>
+#include <rtt/Property.hpp>
+#include <rtt/Attribute.hpp>
 
 #include <Eigen/Dense>
+#include <Eigen/Geometry>
+#include <string>
 
 #include <rci/dto/JointAngles.h>
 #include <rci/dto/JointTorques.h>
 #include <rci/dto/JointVelocities.h>
 #include <rci/dto/JointAccelerations.h>
 #include <rci/dto/JointImpedance.h>
+#include <rci/dto/CartesianPose.h>
 
 #include <rsb/Factory.h>
 #include <rsb/Listener.h>
@@ -20,10 +25,11 @@
 #include "../baseclasses/RTTArmControllerBase.hpp"
 #include "../parsertools/KDLParser.hpp"
 
+#include "CartesianSpace_CircularTask.hpp"
 #include "TaskTest.hpp"
 #include "JointTaskTest.hpp"
 #include "QuinticPolynomial.hpp"
-
+#include "FileWriterCSV.hpp"
 
 #define DEFAULT_ROOT_LINK "lwr_arm_base_link"
 #define DEFAULT_TIP_LINK "lwr_arm_7_link"
@@ -67,6 +73,20 @@ protected:
 	rci::JointVelocitiesPtr currJntVel;
 	rci::JointVelocitiesPtr lastJntVel;
 	rci::JointAccelerationsPtr currJntAcc;
+
+	//start variables for quaternion feedback stuff
+	rci::OrientationPtr desiredCartOrientation;
+	rci::OrientationPtr currCartOrientation;
+	double desiredCartOrientationQuaternionV; //could be also double
+	Eigen::Vector3d desiredCartOrientationQuaternionU;
+	double currCartOrientationQuaternionV; //could be also double
+	Eigen::Vector3d currCartOrientationQuaternionU;
+	double QuaternionProductV; //could be also double
+	Eigen::Vector3d QuaternionProductU;
+	Eigen::Vector3d QuaternionProductEuler;
+	Eigen::Vector3d ref_accOrientationEuler;
+	//stop variables for quaternion feedback stuff
+
 	/**
 	 * Hold the write value
 	 */
@@ -101,41 +121,57 @@ protected:
     JointTaskTest joint_task_;
 	Eigen::VectorXd yD;
 
-    // Pouya
     double getSimulationTime();
+
+    FileWriterCSV * csv_logger;
     QuinticPolynomial QP;
     TaskTest          _task_test;
+    CartesianSpace_CircularTask cart_task;
     Eigen::VectorXd q_p;
     double start_time;
     KDL::JntArray q_des_Nullspace;
     KDL::JntArray q_des_FirstPoint;
-    KDL::JntArray q_tmp;
-    KDL::JntArray qd_tmp;
-    KDL::JntArray qdd_tmp;
-    KDL::JntArray p_tmp;
-    KDL::JntArray pd_tmp;
-    KDL::JntArray pdd_tmp;
+    KDL::JntArray task_q;
+    KDL::JntArray task_qd;
+    KDL::JntArray task_qdd;
+    KDL::JntArray task_p;
+    KDL::JntArray task_pd;
+    KDL::JntArray task_pdd;
+    KDL::JntArray task_pTranslation;
+	KDL::JntArray task_pdTranslation;
+	KDL::JntArray task_pddTranslation;
+	KDL::JntArray task_pOrientation;
+	KDL::JntArray task_pdOrientation;
+	KDL::JntArray task_pddOrientation;
     KDL::JntArray rne_torques;
     KDL::Wrenches ext_force;
     Eigen::VectorXd Kp_joint, Kd_joint;
-    Eigen::VectorXd Kp_cart, Kd_cart;
+    Eigen::VectorXd Kp_cartTranslation, Kd_cartTranslation;
+    Eigen::VectorXd Kp_cartOrientation, Kd_cartOrientation;
     Eigen::VectorXd curr_ee_pose, curr_ee_vel;
+	Eigen::VectorXd curr_ee_poseTranslation, curr_ee_poseOrientation;
+	Eigen::VectorXd curr_ee_velTranslation, curr_ee_velOrientation;
+
+    double safety_margin_Pos, safety_margin_Vel;
+    Eigen::VectorXd jointPosLimits_max, jointPosLimits_min, jointPosLimits_range, jointPosCritic_max, jointPosCritic_min;
+    Eigen::VectorXd jointVelLimits_max, jointVelLimits_min, jointVelLimits_range, jointVelCritic_max, jointVelCritic_min;
 
     //Khatib controller:
 	Eigen::MatrixXd Lamda, Lamda_cstr;
 	Eigen::VectorXd CG_bar;
 	Eigen::VectorXd Forces, Forces_cstr;
 
-//	KDL::Jacobian _jac, _jac_dot;
 	Eigen::MatrixXd jac_cstr_;
 	Eigen::MatrixXd jac_cstr_MPI;
 	KDL::JntArrayVel joint_position_velocity_des;
 
 	Eigen::VectorXd tau_0;
+	Eigen::VectorXd init, final;
+	Eigen::VectorXd Pi, Pf;
 
 	KDL::JntArray q_from_robot;
 	KDL::JntArray qd_from_robot;
-	Eigen::VectorXd ref_acc;
+	Eigen::VectorXd ref_acc, ref_accTranslation, ref_accOrientation;
 	Eigen::MatrixXd tmpeye77;
 	Eigen::MatrixXd tmpeye66;
 	Eigen::MatrixXd preLambda;
@@ -143,8 +179,8 @@ protected:
 	Eigen::MatrixXd P;
 	Eigen::MatrixXd N;
 
-	Eigen::MatrixXd identity77;
-	Eigen::MatrixXd identity66;
+	Eigen::MatrixXd identity77, identity66, identity33;
+	Eigen::MatrixXd diagonal66, diagonal33;
 
 
 	Eigen::MatrixXd M_cstr_;
@@ -158,7 +194,24 @@ protected:
     KDL::JntArray   getQddFromGazebo_KDL();
 
     double internalStartTime;
+    bool detectedError;
 
+    // orocos attributes
+    std::vector<double> tenGains;
+
+    double Kp_cartTranslationKhatibGain;
+    double Kd_cartTranslationKhatibGain;
+    double Kp_cartOrientationKhatibGain;
+    double Kd_cartOrientationKhatibGain;
+    double Kp_jointKhatibGain;
+    double Kd_jointKhatibGain;
+
+    double Kp_cartTranslationConstrainedGain;
+    double Kd_cartTranslationConstrainedGain;
+    double Kp_cartOrientationConstrainedGain;
+    double Kd_cartOrientationConstrainedGain;
+    double Kp_jointConstrainedGain;
+    double Kd_jointConstrainedGain;
 //    Eigen::MatrixXd inverseDynamicsTorques(KDL::JntSpaceInertiaMatrix & _inertia, KDL::JntArray & _coriolis, KDL::JntArray & _gravity, Eigen::VectorXd Kp, Kd);
     //EOP
 
