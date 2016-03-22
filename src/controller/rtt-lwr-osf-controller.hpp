@@ -174,8 +174,8 @@ protected:
 	Eigen::MatrixXd P;
 	Eigen::MatrixXd N;
 
-	Eigen::MatrixXd identity77;
-	Eigen::MatrixXd identity66;
+	Eigen::MatrixXd identity77, identity66, identity33;
+	Eigen::MatrixXd diagonal66, diagonal33;
 
 
 	Eigen::MatrixXd M_cstr_;

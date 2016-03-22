@@ -230,8 +230,6 @@ bool RttLwrOSFController::configureHook() {
     Kp_cartOrientation.resize(3);
     Kd_cartOrientation.resize(3);
 
-//    Kp_cartOrientation.setConstant(400.0);
-//    Kd_cartOrientation.setConstant(40.0);
     Kp_cartOrientation.setConstant(2500.0);
 	Kd_cartOrientation.setConstant(100.0);
 
@@ -252,8 +250,16 @@ bool RttLwrOSFController::configureHook() {
 
 	identity77.resize(7,7);
 	identity66.resize(6,6);
+	identity33.resize(3,3);
 	identity77 = Eigen::MatrixXd::Identity(7, 7);
 	identity66 = Eigen::MatrixXd::Identity(6, 6);
+	identity33 = Eigen::MatrixXd::Identity(3, 3);
+
+	diagonal66.resize(6,6);
+	diagonal33.resize(3,3);
+	diagonal66 = identity66.diagonal().asDiagonal();
+	diagonal33 = identity33.diagonal().asDiagonal();
+
 
 	tmpeye77.resize(7,7);
 	tmpeye66.resize(6,6);
@@ -584,6 +590,28 @@ void RttLwrOSFController::updateHook() {
         kg_.setConstant(1);
         jnt_trq_cmd_ = G_.data + kg_.asDiagonal() * (q_des_FirstPoint.data - jnt_pos_);
         // stop simple joint position controller
+
+        // start simple cartesian space controller by Niels (=> needs further tuning of gains)
+//		cart_task.getPositionTranslation(start_time, task_pTranslation.data);
+//		cart_task.getVelocityTranslation(start_time, task_pdTranslation.data);
+//		cart_task.getPositionOrientation(start_time, task_pOrientation.data);
+//		cart_task.getVelocityOrientation(start_time, task_pdOrientation.data);
+//
+//		ref_accTranslation = 100.0*diagonal33*(task_pTranslation.data - curr_ee_poseTranslation) + 20.0*diagonal33*(task_pdTranslation.data - curr_ee_velTranslation);
+//		ref_accOrientation =   2.0*diagonal33*(task_pOrientation.data - curr_ee_poseOrientation) +  0.0*diagonal33*(task_pdOrientation.data - curr_ee_velOrientation);
+//		l(Error) << "deviation Translation: " << task_pTranslation.data - curr_ee_poseTranslation << RTT::endlog();
+//		l(Error) << "deviation Orientation: " << task_pOrientation.data - curr_ee_poseOrientation << RTT::endlog();
+//		l(Error) << "ref_accTranslation: " << ref_accTranslation << RTT::endlog();
+//		l(Error) << "ref_accOrientation: " << ref_accOrientation << RTT::endlog();
+//		Forces(0) = ref_accTranslation(0);
+//		Forces(1) = ref_accTranslation(1);
+//		Forces(2) = ref_accTranslation(2);
+//		Forces(3) = ref_accOrientation(0);
+//		Forces(4) = ref_accOrientation(1);
+//		Forces(5) = ref_accOrientation(2);
+//		jnt_trq_cmd_ = jac_.data.transpose()*Forces;
+//		l(Error) << "jnt_trq_cmd_: " << jnt_trq_cmd_ << RTT::endlog();
+		// stop simple cartesian space controller by Niels
 	}
 
 //    RTT::log(RTT::Error) << "jnt_trq_cmd_ :\n" << jnt_trq_cmd_ << RTT::endlog();
