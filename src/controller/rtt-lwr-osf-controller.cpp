@@ -256,8 +256,6 @@ bool RttLwrOSFController::configureHook() {
 	M_cstr_.resize(DEFAULT_NR_JOINTS,DEFAULT_NR_JOINTS);
 	C_cstr_.resize(DEFAULT_NR_JOINTS,DEFAULT_NR_JOINTS);
 
-
-	//from start
 	internalStartTime = getSimulationTime();
 	last_SimulationTime = getSimulationTime();
 
@@ -273,8 +271,7 @@ bool RttLwrOSFController::configureHook() {
     start_time = 5.0;
 //    this->QP = QuinticPolynomial(this->start_time, start_time+30,init, final);
 //    this->_task_test = TaskTest(this->start_time, start_time+10,Pi, Pf);
-    this->cart_task = CartesianSpace_CircularTask(this->start_time);
-    //
+    this->cart_task = CartesianSpace_CircularTask(this->start_time, 0.6);
 
     //EOP
 	l(Info) << "configured !" << endlog();
@@ -326,7 +323,7 @@ void RttLwrOSFController::updateHook() {
 	double delta_t = getSimulationTime() - last_SimulationTime;
 	currJntAcc = rci::JointAccelerations::fromRad_ss( (lastJntVel->rad_sVector() - currJntVel->rad_sVector()) * (1 / delta_t) );
 
-	// calculate mass(H), G, jac_ (based on velocities)
+	// calculate mass(M_), coriolis(C_), gravity(G_), jacobian(jac_) (based on velocities)
     updateDynamicsAndKinematics(currJntPos, currJntVel, currJntTrq);
     M_.data = M_.data + tmpeye77; // add regularization for better inverse computation
 
@@ -416,6 +413,7 @@ void RttLwrOSFController::updateHook() {
 
 //        l(Error) << "jnt_pos_: " << jnt_pos_ << RTT::endlog();
 //    	l(Error) << "task_p.data: " << task_p.data << RTT::endlog();
+
 //
 //        throw "out";
 
@@ -539,9 +537,6 @@ void RttLwrOSFController::updateHook() {
 //			throw "out";
 //		}
 
-
-//        RTT::log(RTT::Error) << "qdd :\n" << task_qdd.data<< RTT::endlog();
-
 	} else {
 		// start gravitation compensation controller
 //        kg_.setConstant(1); // heavily overshooting!!!! BEWARE
@@ -556,7 +551,7 @@ void RttLwrOSFController::updateHook() {
 	}
 
     RTT::log(RTT::Error) << "jnt_trq_cmd_ :\n" << jnt_trq_cmd_ << RTT::endlog();
-
+//    throw "out";
 
 
 

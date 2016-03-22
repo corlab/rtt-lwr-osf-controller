@@ -9,7 +9,7 @@
 class CartesianSpace_CircularTask {
 public:
 	CartesianSpace_CircularTask(){ };
-	CartesianSpace_CircularTask(double _start_time);
+	CartesianSpace_CircularTask(double _start_time, double _timescale);
 	~CartesianSpace_CircularTask();
 
     void getPosition(double time, Eigen::VectorXd & ret);
@@ -26,6 +26,7 @@ public:
 
     double radius;
     double start_time;
+    double _timescale;
 
     Eigen::MatrixXd BoardRot;
     Eigen::VectorXd BoardTransl, TipOrientation;

@@ -3,8 +3,9 @@
 #include <cmath>
 
 
-CartesianSpace_CircularTask::CartesianSpace_CircularTask(double _start_time){
+CartesianSpace_CircularTask::CartesianSpace_CircularTask(double _start_time, double _timescale){
     this->start_time = _start_time;
+    this->_timescale = _timescale;
 
     tmp.resize(3);
     BoardRot.resize(3,3);
@@ -54,8 +55,8 @@ CartesianSpace_CircularTask::~CartesianSpace_CircularTask() {
 }
 
 void CartesianSpace_CircularTask::getPosition(double time, Eigen::VectorXd & ret) {
-    tmp(0) = radius * cos(time-start_time);
-    tmp(1) = radius * sin(time-start_time);
+    tmp(0) = radius * cos(_timescale * (time-start_time));
+    tmp(1) = radius * sin(_timescale * (time-start_time));
     tmp(2) = 0.0;
     tmp = BoardRot * tmp + BoardTransl;
 
@@ -72,8 +73,8 @@ void CartesianSpace_CircularTask::getPosition(double time, Eigen::VectorXd & ret
 
 
 void CartesianSpace_CircularTask::getVelocity(double time, Eigen::VectorXd & ret) {
-    tmp(0) = radius * (-1)*sin(time-start_time);
-    tmp(1) = radius * cos(time-start_time);
+    tmp(0) = radius * (-1)*sin(_timescale * (time-start_time));
+    tmp(1) = radius * cos(_timescale * (time-start_time));
     tmp(2) = 0.0;
     tmp = BoardRot * tmp;
 
@@ -91,8 +92,8 @@ void CartesianSpace_CircularTask::getVelocity(double time, Eigen::VectorXd & ret
 
 
 void CartesianSpace_CircularTask::getAcceleration(double time, Eigen::VectorXd & ret) {
-    tmp(0) = radius * (-1)*cos(time-start_time);
-    tmp(1) = radius * (-1)*sin(time-start_time);
+    tmp(0) = radius * (-1)*cos(_timescale * (time-start_time));
+    tmp(1) = radius * (-1)*sin(_timescale * (time-start_time));
 	tmp(2) = 0.0;
 	tmp = BoardRot * tmp;
 
@@ -108,22 +109,22 @@ void CartesianSpace_CircularTask::getAcceleration(double time, Eigen::VectorXd &
 }
 
 void CartesianSpace_CircularTask::getPositionTranslation(double time, Eigen::VectorXd & ret) {
-	ret(0) = radius * cos(time-start_time);
-	ret(1) = radius * sin(time-start_time);
+	ret(0) = radius * cos(_timescale * (time-start_time));
+	ret(1) = radius * sin(_timescale * (time-start_time));
 	ret(2) = 0.0;
 	ret = BoardRot * ret + BoardTransl;
 }
 
 void CartesianSpace_CircularTask::getVelocityTranslation(double time, Eigen::VectorXd & ret) {
-	ret(0) = radius * (-1)*sin(time-start_time);
-	ret(1) = radius * cos(time-start_time);
+	ret(0) = radius * (-1)*sin(_timescale * (time-start_time));
+	ret(1) = radius * cos(_timescale * (time-start_time));
 	ret(2) = 0.0;
 	ret = BoardRot * ret;
 }
 
 void CartesianSpace_CircularTask::getAccelerationTranslation(double time, Eigen::VectorXd & ret) {
-	ret(0) = radius * (-1)*cos(time-start_time);
-	ret(1) = radius * (-1)*sin(time-start_time);
+	ret(0) = radius * (-1)*cos(_timescale * (time-start_time));
+	ret(1) = radius * (-1)*sin(_timescale * (time-start_time));
 	ret(2) = 0.0;
 	ret = BoardRot * ret;
 }
