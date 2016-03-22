@@ -104,7 +104,7 @@ bool RttLwrOSFController::configureHook() {
 							-2.09439510239,
 							-2.96705972839;
 
-	safety_margin_Pos = 0.2;
+	safety_margin_Pos = 0.1;
 	jointPosLimits_range = jointPosLimits_max - jointPosLimits_min;
 	jointPosCritic_max = jointPosLimits_max - safety_margin_Pos*jointPosLimits_range;
 	jointPosCritic_min = jointPosLimits_min + safety_margin_Pos*jointPosLimits_range;
@@ -118,7 +118,7 @@ bool RttLwrOSFController::configureHook() {
 							+3.14159265359;
 	jointVelLimits_min = (-1) * jointVelLimits_max;
 
-	safety_margin_Vel = 0.2;
+	safety_margin_Vel = 0.1;
 	jointVelLimits_range = jointVelLimits_max - jointVelLimits_min;
 	jointVelCritic_max = jointVelLimits_max - safety_margin_Vel*jointVelLimits_range;
 	jointVelCritic_min = jointVelLimits_min + safety_margin_Vel*jointVelLimits_range;
@@ -149,6 +149,10 @@ bool RttLwrOSFController::configureHook() {
 
     curr_ee_pose.resize(6);
     curr_ee_vel.resize(6);
+    curr_ee_poseTranslation.resize(3);
+    curr_ee_velTranslation.resize(3);
+    curr_ee_poseOrientation.resize(3);
+    curr_ee_velOrientation.resize(3);
 
     q_des_Nullspace.resize(DEFAULT_NR_JOINTS); // points endeffector to center of circle
     q_des_Nullspace.data.setZero();
@@ -188,10 +192,14 @@ bool RttLwrOSFController::configureHook() {
     task_p.resize(6);
     task_pd.resize(6);
     task_pdd.resize(6);
+    task_pTranslation.resize(3);
+	task_pdTranslation.resize(3);
+	task_pddTranslation.resize(3);
+	task_pOrientation.resize(3);
+	task_pdOrientation.resize(3);
+	task_pddOrientation.resize(3);
 
     //start variables for quaternion feedback stuff
-    curr_ee_poseOrientation.resize(3);
-    curr_ee_velOrientation.resize(3);
 	desiredCartOrientationQuaternionU.resize(3);
 	currCartOrientationQuaternionU.resize(3);
 	QuaternionProductU.resize(3);
@@ -213,17 +221,20 @@ bool RttLwrOSFController::configureHook() {
     Kp_joint.setConstant(20.0);
 	Kd_joint.setConstant(6.0);
 
-    Kp_cart.resize(6);
-    Kd_cart.resize(6);
+    Kp_cartTranslation.resize(3);
+    Kd_cartTranslation.resize(3);
 
-    Kp_cart.setConstant(50.0);
-    Kd_cart.setConstant(14.0);
+    Kp_cartTranslation.setConstant(50.0);
+    Kd_cartTranslation.setConstant(14.0);
 
-    Kp_cartQuaternion.resize(3);
-    Kd_cartQuaternion.resize(3);
+    Kp_cartOrientation.resize(3);
+    Kd_cartOrientation.resize(3);
 
-    Kp_cartQuaternion.setConstant(100.0);
-    Kd_cartQuaternion.setConstant(20.0);
+//    Kp_cartOrientation.setConstant(400.0);
+//    Kd_cartOrientation.setConstant(40.0);
+    Kp_cartOrientation.setConstant(2500.0);
+	Kd_cartOrientation.setConstant(100.0);
+
 
     tau_0.resize(DEFAULT_NR_JOINTS);
 
@@ -251,6 +262,8 @@ bool RttLwrOSFController::configureHook() {
 
 	preLambda.resize(6,6);
 	ref_acc.resize(6);
+	ref_accTranslation.resize(3);
+	ref_accOrientation.resize(3);
 
 	P.resize(DEFAULT_NR_JOINTS,DEFAULT_NR_JOINTS);
 	M_cstr_.resize(DEFAULT_NR_JOINTS,DEFAULT_NR_JOINTS);
@@ -361,6 +374,13 @@ void RttLwrOSFController::updateHook() {
         cart_task.getVelocity(t-internalStartTime, task_pd.data);
         cart_task.getAcceleration(t-internalStartTime, task_pdd.data);
 
+        cart_task.getPositionTranslation(t-internalStartTime, task_pTranslation.data);
+		cart_task.getVelocityTranslation(t-internalStartTime, task_pdTranslation.data);
+		cart_task.getAccelerationTranslation(t-internalStartTime, task_pddTranslation.data);
+
+		cart_task.getPositionOrientation(t-internalStartTime, task_pOrientation.data);
+		cart_task.getVelocityOrientation(t-internalStartTime, task_pdOrientation.data);
+		cart_task.getAccelerationOrientation(t-internalStartTime, task_pddOrientation.data);
 
         // start convert current endeffector pose to eigen
     	curr_ee_pose(0) = cartFrame.p.x();
@@ -382,6 +402,20 @@ void RttLwrOSFController::updateHook() {
     	curr_ee_vel(3) = velFrame.GetFrame().M.GetRot().x();
     	curr_ee_vel(4) = velFrame.GetFrame().M.GetRot().y();
     	curr_ee_vel(5) = velFrame.GetFrame().M.GetRot().z();
+
+    	curr_ee_poseTranslation(0) = cartFrame.p.x();
+		curr_ee_poseTranslation(1) = cartFrame.p.y();
+		curr_ee_poseTranslation(2) = cartFrame.p.z();
+    	curr_ee_poseOrientation(0) = cartFrame.M.GetRot().x();
+		curr_ee_poseOrientation(1) = cartFrame.M.GetRot().y();
+		curr_ee_poseOrientation(2) = cartFrame.M.GetRot().z();
+
+		curr_ee_velTranslation(0) = velFrame.p.v.x();
+		curr_ee_velTranslation(1) = velFrame.p.v.y();
+		curr_ee_velTranslation(2) = velFrame.p.v.z();
+		curr_ee_velOrientation(0) = velFrame.GetFrame().M.GetRot().x();
+		curr_ee_velOrientation(1) = velFrame.GetFrame().M.GetRot().y();
+		curr_ee_velOrientation(2) = velFrame.GetFrame().M.GetRot().z();
     	// stop convert current endeffector pose to eigen
 
     	// check current configuration for violation of joint limits
@@ -400,8 +434,6 @@ void RttLwrOSFController::updateHook() {
 				l(Error) << "joint " << jointnr << " is close to negative joint velocity limit" << RTT::endlog();
 			}
     	}
-
-
 
 //        l(Error) << "pose: " << curr_ee_pose << RTT::endlog();
 //        l(Error) << "velo: " << curr_ee_vel << RTT::endlog();
@@ -423,47 +455,51 @@ void RttLwrOSFController::updateHook() {
         // stop open loop joint controller
 
     	//start quaternion feedback stuff
-    	curr_ee_poseOrientation(0) = cartFrame.M.GetRot().x();
-		curr_ee_poseOrientation(1) = cartFrame.M.GetRot().y();
-		curr_ee_poseOrientation(2) = cartFrame.M.GetRot().z();
-		curr_ee_velOrientation(0) = velFrame.GetFrame().M.GetRot().x();
-		curr_ee_velOrientation(1) = velFrame.GetFrame().M.GetRot().y();
-		curr_ee_velOrientation(2) = velFrame.GetFrame().M.GetRot().z();
-    	desiredCartOrientation = rci::Orientation::fromEulerAngles( task_p.data(3), task_p.data(4), task_p.data(5) );
-    	currCartOrientation = rci::Orientation::fromEulerAngles( curr_ee_pose(3), curr_ee_pose(4), curr_ee_pose(5) );
-
-    	//get Quaternion representation
-    	desiredCartOrientationQuaternionV    = desiredCartOrientation->q0();
-    	desiredCartOrientationQuaternionU(0) = desiredCartOrientation->q1();
-    	desiredCartOrientationQuaternionU(1) = desiredCartOrientation->q2();
-    	desiredCartOrientationQuaternionU(2) = desiredCartOrientation->q3();
-
-    	currCartOrientationQuaternionV    = currCartOrientation->q0();
-    	currCartOrientationQuaternionU(0) = currCartOrientation->q1();
-    	currCartOrientationQuaternionU(1) = currCartOrientation->q2();
-    	currCartOrientationQuaternionU(2) = currCartOrientation->q3();
-
-    	// compute QuaternionProduct
-    	QuaternionProductV = 	desiredCartOrientationQuaternionV * currCartOrientationQuaternionV -
-    							desiredCartOrientationQuaternionU.transpose() * currCartOrientationQuaternionU;
-		QuaternionProductU = 	desiredCartOrientationQuaternionV * currCartOrientationQuaternionU +
-								currCartOrientationQuaternionV * desiredCartOrientationQuaternionU +
-								desiredCartOrientationQuaternionU.cross(currCartOrientationQuaternionU);
-
-		// compute log(Quaternion)
-		if(QuaternionProductU(0) == 0.0 && QuaternionProductU(1) == 0.0 && QuaternionProductU(2) == 0.0){
-			QuaternionProductEuler.setZero();
-		}
-		else{
-			QuaternionProductEuler = acos(QuaternionProductV) * QuaternionProductU / QuaternionProductU.norm(); //or use .squaredNorm() here??
-		}
-
-		ref_accOrientationEuler = Kp_cartQuaternion.asDiagonal()*2*(QuaternionProductEuler) - Kd_cartQuaternion.asDiagonal()*(curr_ee_velOrientation); // TODO: task_pdd.data is missing
+//    	desiredCartOrientation = rci::Orientation::fromEulerAngles( task_p.data(3), task_p.data(4), task_p.data(5) );
+//    	currCartOrientation = rci::Orientation::fromEulerAngles( curr_ee_pose(3), curr_ee_pose(4), curr_ee_pose(5) );
+//
+//    	//get Quaternion representation
+//    	desiredCartOrientationQuaternionV    = desiredCartOrientation->q0();
+//    	desiredCartOrientationQuaternionU(0) = desiredCartOrientation->q1();
+//    	desiredCartOrientationQuaternionU(1) = desiredCartOrientation->q2();
+//    	desiredCartOrientationQuaternionU(2) = desiredCartOrientation->q3();
+//
+//    	currCartOrientationQuaternionV    = currCartOrientation->q0();
+//    	currCartOrientationQuaternionU(0) = currCartOrientation->q1();
+//    	currCartOrientationQuaternionU(1) = currCartOrientation->q2();
+//    	currCartOrientationQuaternionU(2) = currCartOrientation->q3();
+//
+//    	// compute QuaternionProduct
+//    	QuaternionProductV = 	desiredCartOrientationQuaternionV * currCartOrientationQuaternionV -
+//    							desiredCartOrientationQuaternionU.transpose() * currCartOrientationQuaternionU;
+//		QuaternionProductU = 	desiredCartOrientationQuaternionV * currCartOrientationQuaternionU +
+//								currCartOrientationQuaternionV * desiredCartOrientationQuaternionU +
+//								desiredCartOrientationQuaternionU.cross(currCartOrientationQuaternionU);
+//
+//		// compute log(Quaternion)
+//		if(QuaternionProductU(0) == 0.0 && QuaternionProductU(1) == 0.0 && QuaternionProductU(2) == 0.0){
+//			QuaternionProductEuler.setZero();
+//		}
+//		else{
+//			QuaternionProductEuler = acos(QuaternionProductV) * QuaternionProductU / QuaternionProductU.norm(); //or use .squaredNorm() here??
+//		}
+//
+//		ref_accOrientationEuler = Kp_cartOrientation.asDiagonal()*2*(QuaternionProductEuler) - Kd_cartOrientation.asDiagonal()*(curr_ee_velOrientation); // TODO: task_pdd.data is missing
 		//stop quaternion feedback stuff
 
 
 		//compute refrence acceleration
-		ref_acc = task_pdd.data + Kd_cart.asDiagonal()*(task_pd.data - curr_ee_vel) + Kp_cart.asDiagonal()*(task_p.data - curr_ee_pose);
+		ref_accTranslation = task_pddTranslation.data + Kd_cartTranslation.asDiagonal()*(task_pdTranslation.data - curr_ee_velTranslation) + Kp_cartTranslation.asDiagonal()*(task_pTranslation.data - curr_ee_poseTranslation);
+		ref_accOrientation = task_pddOrientation.data + Kd_cartOrientation.asDiagonal()*(task_pdOrientation.data - curr_ee_velOrientation) + Kp_cartOrientation.asDiagonal()*(task_pOrientation.data - curr_ee_poseOrientation);
+//		l(Error) << "ref_accTranslation: " << ref_accTranslation << RTT::endlog();
+//		l(Error) << "ref_accOrientation: " << ref_accOrientation << RTT::endlog();
+		ref_acc(0) = ref_accTranslation(0);
+		ref_acc(1) = ref_accTranslation(1);
+		ref_acc(2) = ref_accTranslation(2);
+		ref_acc(3) = ref_accOrientation(0);
+		ref_acc(4) = ref_accOrientation(1);
+		ref_acc(5) = ref_accOrientation(2);
+
 //    	ref_acc(3) = ref_accOrientationEuler(0);
 //    	ref_acc(4) = ref_accOrientationEuler(1);
 //    	ref_acc(5) = ref_accOrientationEuler(2);
@@ -550,7 +586,7 @@ void RttLwrOSFController::updateHook() {
         // stop simple joint position controller
 	}
 
-    RTT::log(RTT::Error) << "jnt_trq_cmd_ :\n" << jnt_trq_cmd_ << RTT::endlog();
+//    RTT::log(RTT::Error) << "jnt_trq_cmd_ :\n" << jnt_trq_cmd_ << RTT::endlog();
 //    throw "out";
 
 

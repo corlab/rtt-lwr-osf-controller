@@ -72,8 +72,6 @@ protected:
 	rci::JointAccelerationsPtr currJntAcc;
 
 	//start variables for quaternion feedback stuff
-	Eigen::VectorXd curr_ee_poseOrientation;
-	Eigen::VectorXd curr_ee_velOrientation;
 	rci::OrientationPtr desiredCartOrientation;
 	rci::OrientationPtr currCartOrientation;
 	double desiredCartOrientationQuaternionV; //could be also double
@@ -134,12 +132,20 @@ protected:
     KDL::JntArray task_p;
     KDL::JntArray task_pd;
     KDL::JntArray task_pdd;
+    KDL::JntArray task_pTranslation;
+	KDL::JntArray task_pdTranslation;
+	KDL::JntArray task_pddTranslation;
+	KDL::JntArray task_pOrientation;
+	KDL::JntArray task_pdOrientation;
+	KDL::JntArray task_pddOrientation;
     KDL::JntArray rne_torques;
     KDL::Wrenches ext_force;
     Eigen::VectorXd Kp_joint, Kd_joint;
-    Eigen::VectorXd Kp_cart, Kd_cart;
-    Eigen::VectorXd Kp_cartQuaternion, Kd_cartQuaternion;
+    Eigen::VectorXd Kp_cartTranslation, Kd_cartTranslation;
+    Eigen::VectorXd Kp_cartOrientation, Kd_cartOrientation;
     Eigen::VectorXd curr_ee_pose, curr_ee_vel;
+	Eigen::VectorXd curr_ee_poseTranslation, curr_ee_poseOrientation;
+	Eigen::VectorXd curr_ee_velTranslation, curr_ee_velOrientation;
 
     double safety_margin_Pos, safety_margin_Vel;
     Eigen::VectorXd jointPosLimits_max, jointPosLimits_min, jointPosLimits_range, jointPosCritic_max, jointPosCritic_min;
@@ -160,7 +166,7 @@ protected:
 
 	KDL::JntArray q_from_robot;
 	KDL::JntArray qd_from_robot;
-	Eigen::VectorXd ref_acc;
+	Eigen::VectorXd ref_acc, ref_accTranslation, ref_accOrientation;
 	Eigen::MatrixXd tmpeye77;
 	Eigen::MatrixXd tmpeye66;
 	Eigen::MatrixXd preLambda;
