@@ -427,17 +427,41 @@ void RttLwrOSFController::updateHook() {
     	// check current configuration for violation of joint limits
     	for (int jointnr = 0; jointnr < DEFAULT_NR_JOINTS; jointnr++) {
     		if (jnt_pos_[jointnr] > jointPosCritic_max[jointnr]){
-    			l(Error) << "joint " << jointnr << " is close to positive joint position limit" << RTT::endlog();
+    			if (jnt_pos_[jointnr] > jointPosLimits_max[jointnr]){
+    				l(Error) << "joint " << jointnr << " violates positive joint position limit !!!" << RTT::endlog();
+    				throw "out";
+    			}
+    			else{
+    				l(Error) << "joint " << jointnr << " is close to positive joint position limit" << RTT::endlog();
+    			}
     		}
     		else if (jnt_pos_[jointnr] < jointPosCritic_min[jointnr]){
-				l(Error) << "joint " << jointnr << " is close to negative joint position limit" << RTT::endlog();
+    			if (jnt_pos_[jointnr] < jointPosLimits_min[jointnr]){
+    				l(Error) << "joint " << jointnr << " violates negative joint position limit !!!" << RTT::endlog();
+    				throw "out";
+    			}
+    			else{
+    				l(Error) << "joint " << jointnr << " is close to negative joint position limit" << RTT::endlog();
+    			}
 			}
 
     		if (jnt_vel_[jointnr] > jointVelCritic_max[jointnr]){
-    			l(Error) << "joint " << jointnr << " is close to positive joint velocity limit" << RTT::endlog();
+    			if (jnt_pos_[jointnr] > jointVelLimits_max[jointnr]){
+    				l(Error) << "joint " << jointnr << " violates positive joint velocity limit !!!" << RTT::endlog();
+    				throw "out";
+    			}
+    			else{
+    				l(Error) << "joint " << jointnr << " is close to positive joint velocity limit" << RTT::endlog();
+    			}
     		}
     		else if (jnt_vel_[jointnr] < jointVelCritic_min[jointnr]){
-				l(Error) << "joint " << jointnr << " is close to negative joint velocity limit" << RTT::endlog();
+    			if (jnt_pos_[jointnr] > jointVelLimits_min[jointnr]){
+    				l(Error) << "joint " << jointnr << " violates negative joint velocity limit !!!" << RTT::endlog();
+    				throw "out";
+    			}
+    			else{
+    				l(Error) << "joint " << jointnr << " is close to negative joint velocity limit" << RTT::endlog();
+    			}
 			}
     	}
 
@@ -451,7 +475,6 @@ void RttLwrOSFController::updateHook() {
 
 //        l(Error) << "jnt_pos_: " << jnt_pos_ << RTT::endlog();
 //    	l(Error) << "task_p.data: " << task_p.data << RTT::endlog();
-
 //
 //        throw "out";
 
