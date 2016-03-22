@@ -292,6 +292,9 @@ bool RttLwrOSFController::configureHook() {
 //    this->_task_test = TaskTest(this->start_time, start_time+10,Pi, Pf);
     this->cart_task = CartesianSpace_CircularTask(this->start_time, 0.6);
 
+    std::string fname = "desired_cart_pose";
+    this->csv_logger = new FileWriterCSV(fname);
+
     //EOP
 	l(Info) << "configured !" << endlog();
 	return true;
@@ -388,6 +391,9 @@ void RttLwrOSFController::updateHook() {
 		cart_task.getVelocityOrientation(t-internalStartTime, task_pdOrientation.data);
 		cart_task.getAccelerationOrientation(t-internalStartTime, task_pddOrientation.data);
 
+		//log data
+//		csv_logger->writeFile(task_p.data);
+
         // start convert current endeffector pose to eigen
     	curr_ee_pose(0) = cartFrame.p.x();
     	curr_ee_pose(1) = cartFrame.p.y();
@@ -425,11 +431,12 @@ void RttLwrOSFController::updateHook() {
     	// stop convert current endeffector pose to eigen
 
     	// check current configuration for violation of joint limits
+		detectedError = false;
     	for (int jointnr = 0; jointnr < DEFAULT_NR_JOINTS; jointnr++) {
     		if (jnt_pos_[jointnr] > jointPosCritic_max[jointnr]){
     			if (jnt_pos_[jointnr] > jointPosLimits_max[jointnr]){
     				l(Error) << "joint " << jointnr << " violates positive joint position limit !!!" << RTT::endlog();
-    				throw "out";
+    				detectedError = true;
     			}
     			else{
     				l(Error) << "joint " << jointnr << " is close to positive joint position limit" << RTT::endlog();
@@ -438,7 +445,7 @@ void RttLwrOSFController::updateHook() {
     		else if (jnt_pos_[jointnr] < jointPosCritic_min[jointnr]){
     			if (jnt_pos_[jointnr] < jointPosLimits_min[jointnr]){
     				l(Error) << "joint " << jointnr << " violates negative joint position limit !!!" << RTT::endlog();
-    				throw "out";
+    				detectedError = true;
     			}
     			else{
     				l(Error) << "joint " << jointnr << " is close to negative joint position limit" << RTT::endlog();
@@ -448,7 +455,7 @@ void RttLwrOSFController::updateHook() {
     		if (jnt_vel_[jointnr] > jointVelCritic_max[jointnr]){
     			if (jnt_pos_[jointnr] > jointVelLimits_max[jointnr]){
     				l(Error) << "joint " << jointnr << " violates positive joint velocity limit !!!" << RTT::endlog();
-    				throw "out";
+    				detectedError = true;
     			}
     			else{
     				l(Error) << "joint " << jointnr << " is close to positive joint velocity limit" << RTT::endlog();
@@ -457,12 +464,16 @@ void RttLwrOSFController::updateHook() {
     		else if (jnt_vel_[jointnr] < jointVelCritic_min[jointnr]){
     			if (jnt_pos_[jointnr] > jointVelLimits_min[jointnr]){
     				l(Error) << "joint " << jointnr << " violates negative joint velocity limit !!!" << RTT::endlog();
-    				throw "out";
+    				detectedError = true;
     			}
     			else{
     				l(Error) << "joint " << jointnr << " is close to negative joint velocity limit" << RTT::endlog();
     			}
 			}
+    	}
+    	if (detectedError){
+    		l(Error) << "task_p.data: " << task_p.data << RTT::endlog();
+//    		throw "out";
     	}
 
 //        l(Error) << "pose: " << curr_ee_pose << RTT::endlog();
@@ -472,9 +483,7 @@ void RttLwrOSFController::updateHook() {
 //        l(Error) << "cartFrame.M.GetRot().y(): " << cartFrame.M.GetRot().y() / (2*M_PI) * 360<< RTT::endlog();
 //        l(Error) << "cartFrame.M.GetRot().z(): " << cartFrame.M.GetRot().z() / (2*M_PI) * 360 << RTT::endlog();
 //
-
 //        l(Error) << "jnt_pos_: " << jnt_pos_ << RTT::endlog();
-//    	l(Error) << "task_p.data: " << task_p.data << RTT::endlog();
 //
 //        throw "out";
 
@@ -658,6 +667,7 @@ void RttLwrOSFController::updateHook() {
 }
 
 void RttLwrOSFController::stopHook() {
+	csv_logger->closeFile();
 	l(Info) << "executes stopping !" << endlog();
 }
 

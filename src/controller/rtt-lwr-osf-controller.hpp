@@ -8,6 +8,7 @@
 
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
+#include <string>
 
 #include <rci/dto/JointAngles.h>
 #include <rci/dto/JointTorques.h>
@@ -26,7 +27,7 @@
 #include "TaskTest.hpp"
 #include "JointTaskTest.hpp"
 #include "QuinticPolynomial.hpp"
-
+#include "FileWriterCSV.hpp"
 
 #define DEFAULT_ROOT_LINK "lwr_arm_base_link"
 #define DEFAULT_TIP_LINK "lwr_arm_7_link"
@@ -119,6 +120,8 @@ protected:
 	Eigen::VectorXd yD;
 
     double getSimulationTime();
+
+    FileWriterCSV * csv_logger;
     QuinticPolynomial QP;
     TaskTest          _task_test;
     CartesianSpace_CircularTask cart_task;
@@ -189,6 +192,7 @@ protected:
     KDL::JntArray   getQddFromGazebo_KDL();
 
     double internalStartTime;
+    bool detectedError;
 
 //    Eigen::MatrixXd inverseDynamicsTorques(KDL::JntSpaceInertiaMatrix & _inertia, KDL::JntArray & _coriolis, KDL::JntArray & _gravity, Eigen::VectorXd Kp, Kd);
     //EOP
