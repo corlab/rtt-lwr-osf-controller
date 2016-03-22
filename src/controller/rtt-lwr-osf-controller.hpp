@@ -198,8 +198,20 @@ protected:
 
     // orocos attributes
     std::vector<double> tenGains;
-    double oneGain;
 
+    double Kp_cartTranslationKhatibGain;
+    double Kd_cartTranslationKhatibGain;
+    double Kp_cartOrientationKhatibGain;
+    double Kd_cartOrientationKhatibGain;
+    double Kp_jointKhatibGain;
+    double Kd_jointKhatibGain;
+
+    double Kp_cartTranslationConstrainedGain;
+    double Kd_cartTranslationConstrainedGain;
+    double Kp_cartOrientationConstrainedGain;
+    double Kd_cartOrientationConstrainedGain;
+    double Kp_jointConstrainedGain;
+    double Kd_jointConstrainedGain;
 //    Eigen::MatrixXd inverseDynamicsTorques(KDL::JntSpaceInertiaMatrix & _inertia, KDL::JntArray & _coriolis, KDL::JntArray & _gravity, Eigen::VectorXd Kp, Kd);
     //EOP
 

@@ -78,11 +78,31 @@ RttLwrOSFController::RttLwrOSFController(std::string const& name) :
 			"urdfString", "URDF string to parse.");
 
 
-	// resize gains and use default values if you like
+	// resize gains and use
 	tenGains.resize(10);
-	oneGain = -77;
 
-	this->addProperty( "oneGain", oneGain ).doc("oneGain Example Description");
+	//set gain default values if you like
+//    Kp_cartTranslationKhatibGain = 50;
+//    Kd_cartTranslationKhatibGain = 14;
+//    Kp_cartOrientationKhatibGain = 2500;
+//    Kd_cartOrientationKhatibGain = 100;
+//    Kp_jointKhatibGain = 20;
+//    Kd_jointKhatibGain = 6;
+
+	this->addProperty( "Kp_cartTranslationKhatibGain", Kp_cartTranslationKhatibGain ).doc("KhatibGain1 Example Description");
+	this->addProperty( "Kd_cartTranslationKhatibGain", Kd_cartTranslationKhatibGain ).doc("KhatibGain2 Example Description");
+	this->addProperty( "Kp_cartOrientationKhatibGain", Kp_cartOrientationKhatibGain ).doc("KhatibGain3 Example Description");
+	this->addProperty( "Kd_cartOrientationKhatibGain", Kd_cartOrientationKhatibGain ).doc("KhatibGain4 Example Description");
+	this->addProperty( "Kp_jointKhatibGain", Kp_jointKhatibGain ).doc("KhatibGain5 Example Description");
+	this->addProperty( "Kd_jointKhatibGain", Kd_jointKhatibGain ).doc("KhatibGain6 Example Description");
+
+	this->addProperty( "Kp_cartTranslationConstrainedGain", Kp_cartTranslationConstrainedGain ).doc("ConstrainedGain1 Example Description");
+	this->addProperty( "Kd_cartTranslationConstrainedGain", Kd_cartTranslationConstrainedGain ).doc("ConstrainedGain2 Example Description");
+	this->addProperty( "Kp_cartOrientationConstrainedGain", Kp_cartOrientationConstrainedGain ).doc("ConstrainedGain3 Example Description");
+	this->addProperty( "Kd_cartOrientationConstrainedGain", Kd_cartOrientationConstrainedGain ).doc("ConstrainedGain4 Example Description");
+	this->addProperty( "Kp_jointConstrainedGain", Kp_jointConstrainedGain ).doc("ConstrainedGain5 Example Description");
+	this->addProperty( "Kd_jointConstrainedGain", Kd_jointConstrainedGain ).doc("ConstrainedGain6 Example Description");
+
 	this->addProperty( "tenGains", tenGains ).doc("tenGains Example Description");
 
 	l(Info) << "constructed !" << endlog();
@@ -92,6 +112,25 @@ bool RttLwrOSFController::configureHook() {
 
 	initKDLTools();
 
+	// start test printout of the gains (can be removed)
+//	l(Error) << "Kp_cartTranslationKhatibGain: " << Kp_cartTranslationKhatibGain << endlog();
+//	l(Error) << "Kd_cartTranslationKhatibGain: " << Kd_cartTranslationKhatibGain << endlog();
+//	l(Error) << "Kp_cartOrientationKhatibGain: " << Kp_cartOrientationKhatibGain << endlog();
+//	l(Error) << "Kd_cartOrientationKhatibGain: " << Kd_cartOrientationKhatibGain << endlog();
+//	l(Error) << "Kp_jointKhatibGain: " << Kp_jointKhatibGain << endlog();
+//	l(Error) << "Kd_jointKhatibGain: " << Kd_jointKhatibGain << endlog();
+//
+//	l(Error) << "Kp_cartTranslationConstrainedGain: " << Kp_cartTranslationConstrainedGain << endlog();
+//	l(Error) << "Kd_cartTranslationConstrainedGain: " << Kd_cartTranslationConstrainedGain << endlog();
+//	l(Error) << "Kp_cartOrientationConstrainedGain: " << Kp_cartOrientationConstrainedGain << endlog();
+//	l(Error) << "Kd_cartOrientationConstrainedGain: " << Kd_cartOrientationConstrainedGain << endlog();
+//	l(Error) << "Kp_jointConstrainedGain: " << Kp_jointConstrainedGain << endlog();
+//	l(Error) << "Kd_jointConstrainedGain: " << Kd_jointConstrainedGain << endlog();
+//
+//	for (int i = 0; i < tenGains.size(); i++) {
+//		l(Error) << "tenGains[" << i << "]: " << tenGains[i] << endlog();
+//	}
+	// stop test printout of the gains (can be removed)
 
 	jointPosLimits_max.resize(DEFAULT_NR_JOINTS);
 	jointPosLimits_min.resize(DEFAULT_NR_JOINTS);
@@ -222,24 +261,29 @@ bool RttLwrOSFController::configureHook() {
     rne_torques.resize(DEFAULT_NR_JOINTS);
     ext_force.resize(DEFAULT_NR_JOINTS);
 
-    Kp_joint.resize(DEFAULT_NR_JOINTS);
-    Kd_joint.resize(DEFAULT_NR_JOINTS);
-//    Kp_joint.setConstant(2.0);
-//	Kd_joint.setConstant(1.4);
-    Kp_joint.setConstant(20.0);
-	Kd_joint.setConstant(6.0);
-
     Kp_cartTranslation.resize(3);
     Kd_cartTranslation.resize(3);
-
-    Kp_cartTranslation.setConstant(50.0);
-    Kd_cartTranslation.setConstant(14.0);
-
     Kp_cartOrientation.resize(3);
     Kd_cartOrientation.resize(3);
+    Kp_joint.resize(DEFAULT_NR_JOINTS);
+    Kd_joint.resize(DEFAULT_NR_JOINTS);
 
-    Kp_cartOrientation.setConstant(2500.0);
-	Kd_cartOrientation.setConstant(100.0);
+    if (use_original_khatib_controller){
+		Kp_cartTranslation.setConstant(Kp_cartTranslationKhatibGain);
+		Kd_cartTranslation.setConstant(Kd_cartTranslationKhatibGain);
+		Kp_cartOrientation.setConstant(Kp_cartOrientationKhatibGain);
+		Kd_cartOrientation.setConstant(Kd_cartOrientationKhatibGain);
+		Kp_joint.setConstant(Kp_jointKhatibGain);
+		Kd_joint.setConstant(Kd_jointKhatibGain);
+    }
+    else{
+		Kp_cartTranslation.setConstant(Kp_cartTranslationConstrainedGain);
+		Kd_cartTranslation.setConstant(Kd_cartTranslationConstrainedGain);
+		Kp_cartOrientation.setConstant(Kp_cartOrientationConstrainedGain);
+		Kd_cartOrientation.setConstant(Kd_cartOrientationConstrainedGain);
+		Kp_joint.setConstant(Kp_jointConstrainedGain);
+		Kd_joint.setConstant(Kd_jointConstrainedGain);
+    }
 
     tau_0.resize(DEFAULT_NR_JOINTS);
 
@@ -328,12 +372,6 @@ double RttLwrOSFController::getSimulationTime(){
 
 
 void RttLwrOSFController::updateHook() {
-
-	// test printout of the gains (can be removed)
-	l(Error) << "oneGain: " << oneGain << endlog();
-	for (int i = 0; i < tenGains.size(); i++) {
-		l(Error) << "tenGains[" << i << "]: " << tenGains[i] << endlog();
-	}
 
 	/** Read feedback from robot */
 
