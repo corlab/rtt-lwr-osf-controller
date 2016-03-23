@@ -694,7 +694,7 @@ void RttLwrOSFController::updateHook() {
 
 	        //Stop external forces controller
 
-			jnt_trq_cmd_ = jnt_trq_cmd_Motion_Projected + 0.05 * jnt_trq_cmd_Nullspace_Projected + jnt_trq_cmd_Force_Projected;
+            jnt_trq_cmd_ = jnt_trq_cmd_Motion_Projected + 0.1 * jnt_trq_cmd_Nullspace_Projected + jnt_trq_cmd_Force_Projected;
 		}
 
 //        l(Error) << "jac_cstr_: " << jac_cstr_ << RTT::endlog();
