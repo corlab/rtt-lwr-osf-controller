@@ -278,7 +278,7 @@ bool RttLwrOSFController::configureHook() {
 
     lambda_des.resize(6);
     lambda_des.setConstant(0.0);
-	lambda_des[0] = -5; //desired endeffector force
+	lambda_des[2] = -5; //desired endeffector force, use z-axis here
 
     rne_torques.resize(DEFAULT_NR_JOINTS);
     ext_force.resize(DEFAULT_NR_JOINTS);
@@ -315,14 +315,15 @@ bool RttLwrOSFController::configureHook() {
 
     tau_0.resize(DEFAULT_NR_JOINTS);
 
+    lastJntVel.resize(DEFAULT_NR_JOINTS);
+	currJntAcc.resize(DEFAULT_NR_JOINTS);
+
     //Khatib controller:
 	Lamda.resize(6,6);
 	Lamda_cstr.resize(6,6);
 	CG_bar.resize(6);
 	Forces.resize(6);
 	Forces_cstr.resize(6);
-
-	lastJntVel = rci::JointVelocities::create(DEFAULT_NR_JOINTS, 0.0);
 
 	jac_cstr_.resize(6, DEFAULT_NR_JOINTS);
 	jac_cstr_MPI.resize(DEFAULT_NR_JOINTS, 6);
@@ -460,7 +461,7 @@ void RttLwrOSFController::updateHook() {
 	}
 
 	double delta_t = getSimulationTime() - last_SimulationTime;
-	currJntAcc = rci::JointAccelerations::fromRad_ss( (lastJntVel->rad_sVector() - currJntVel->rad_sVector()) * (1 / delta_t) );
+	currJntAcc = (lastJntVel - jnt_vel_) / delta_t ;
 
 	// calculate mass(M_), coriolis(C_), gravity(G_), jacobian(jac_) (based on velocities)
     updateDynamicsAndKinematics(currJntPos, currJntVel, currJntTrq);
@@ -660,12 +661,12 @@ void RttLwrOSFController::updateHook() {
 		else{
 		    //compute constrained jacobian //TODO: check...
 		    jac_cstr_ = jac_.data;
-		    jac_cstr_.row(2).setZero();
-		//    jac_cstr_.row(0).setZero();
-		//    jac_cstr_.row(1).setZero();
-		//    jac_cstr_.row(3).setZero();
-		//    jac_cstr_.row(4).setZero();
-		//    jac_cstr_.row(5).setZero();
+		    jac_cstr_.row(0).setZero();
+		    jac_cstr_.row(1).setZero();
+		    //jac_cstr_.row(2).setZero();
+		    jac_cstr_.row(3).setZero();
+		    jac_cstr_.row(4).setZero();
+		    jac_cstr_.row(5).setZero();
 
 		    //compute constrained projection variables
 			jac_cstr_MPI = (jac_cstr_.transpose() * jac_cstr_ + tmpeye77).inverse() * jac_cstr_.transpose();
@@ -691,7 +692,7 @@ void RttLwrOSFController::updateHook() {
 	        //jnt_trq_cmd_Force_Projected = (identity77 - P) * (h) + (identity77 - P) * M_.data * M_cstr_.inverse() * (P * M_.data * currJntAcc * + C_cstr_) + jac_cstr_.transpose() * lambda_des;
 	        //Stop external forces controller
 
-			jnt_trq_cmd_ = jnt_trq_cmd_Motion_Projected;// + 0.1 * jnt_trq_cmd_Nullspace_Projected; // + jnt_trq_cmd_Force_Projected
+			jnt_trq_cmd_ = jnt_trq_cmd_Motion_Projected + 0.05 * jnt_trq_cmd_Nullspace_Projected + jnt_trq_cmd_Force_Projected;
 		}
 
 //        l(Error) << "jac_cstr_: " << jac_cstr_ << RTT::endlog();
@@ -759,7 +760,7 @@ void RttLwrOSFController::updateHook() {
 	}
 
 	last_SimulationTime = getSimulationTime();
-	lastJntVel = currJntVel;
+	lastJntVel = jnt_vel_;
 }
 
 void RttLwrOSFController::stopHook() {

@@ -72,8 +72,8 @@ protected:
 	rci::JointAnglesPtr currJntPos;
 	rci::JointTorquesPtr currJntTrq;
 	rci::JointVelocitiesPtr currJntVel;
-	rci::JointVelocitiesPtr lastJntVel;
-	rci::JointAccelerationsPtr currJntAcc;
+	Eigen::VectorXd lastJntVel;
+	Eigen::VectorXd currJntAcc;
 
 	//start variables for quaternion feedback stuff
 	rci::OrientationPtr desiredCartOrientation;
