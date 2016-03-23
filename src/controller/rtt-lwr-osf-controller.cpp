@@ -251,7 +251,7 @@ bool RttLwrOSFController::configureHook() {
     q_des_FirstPoint.data(0) = 0.0974;
     q_des_FirstPoint.data(1) = 0.0534;
     q_des_FirstPoint.data(2) = 0.0872;
-    q_des_FirstPoint.data(3) =-1.5562;
+    q_des_FirstPoint.data(3) =-1.7562;
     q_des_FirstPoint.data(4) =-0.0325;
     q_des_FirstPoint.data(5) = 1.2971;
     q_des_FirstPoint.data(6) = 0.0;
@@ -461,7 +461,7 @@ void RttLwrOSFController::updateHook() {
 	}
 
 	double delta_t = getSimulationTime() - last_SimulationTime;
-	currJntAcc = (lastJntVel - jnt_vel_) / delta_t ;
+    currJntAcc = (jnt_vel_ - lastJntVel) / 0.001;//delta_t ;
 
 	// calculate mass(M_), coriolis(C_), gravity(G_), jacobian(jac_) (based on velocities)
     updateDynamicsAndKinematics(currJntPos, currJntVel, currJntTrq);
@@ -689,7 +689,9 @@ void RttLwrOSFController::updateHook() {
 			//Stop constrained nullspace controller
 
 	        //Start external forces controller
-	        //jnt_trq_cmd_Force_Projected = (identity77 - P) * (h) + (identity77 - P) * M_.data * M_cstr_.inverse() * (P * M_.data * currJntAcc * + C_cstr_) + jac_cstr_.transpose() * lambda_des;
+
+                jnt_trq_cmd_Force_Projected = (identity77 - P) * (h) + jac_cstr_.transpose() * lambda_des + (identity77 - P) * M_.data * M_cstr_.inverse() * (P * M_.data * currJntAcc + C_cstr_ * jnt_vel_ );
+
 	        //Stop external forces controller
 
 			jnt_trq_cmd_ = jnt_trq_cmd_Motion_Projected + 0.05 * jnt_trq_cmd_Nullspace_Projected + jnt_trq_cmd_Force_Projected;
