@@ -248,13 +248,25 @@ bool RttLwrOSFController::configureHook() {
 	q_des_Nullspace.data(6) = 0.0;
 
     //desired joint configuration for board parallel to floor and first point of circle
-    q_des_FirstPoint.data(0) = 0.0974;
-    q_des_FirstPoint.data(1) = 0.0534;
-    q_des_FirstPoint.data(2) = 0.0872;
-    q_des_FirstPoint.data(3) =-1.7562;
-    q_des_FirstPoint.data(4) =-0.0325;
-    q_des_FirstPoint.data(5) = 1.2971;
+    // q_des_FirstPoint.data(0) = 0.0974;
+    // q_des_FirstPoint.data(1) = 0.0534;
+    // q_des_FirstPoint.data(2) = 0.0872;
+    // q_des_FirstPoint.data(3) =-1.7562;
+    // q_des_FirstPoint.data(4) =-0.0325;
+    // q_des_FirstPoint.data(5) = 1.2971;
+    // q_des_FirstPoint.data(6) = 0.0;
+
+    q_des_FirstPoint.data(0) = -0.1192;
+    q_des_FirstPoint.data(1) = 0.3114;
+    q_des_FirstPoint.data(2) = -0.1868;
+    q_des_FirstPoint.data(3) = -1.5733;
+    q_des_FirstPoint.data(4) = 0.1194;
+    q_des_FirstPoint.data(5) = 1.0685;
     q_des_FirstPoint.data(6) = 0.0;
+
+//lwr_arm_6_joint = -0.3255
+
+
 
     task_q.resize(DEFAULT_NR_JOINTS);
     task_qd.resize(DEFAULT_NR_JOINTS);
