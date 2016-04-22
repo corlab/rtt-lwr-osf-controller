@@ -8,19 +8,15 @@
 #include <rtt/Property.hpp>
 #include <rtt/Attribute.hpp>
 
-#include <Eigen/Dense>
-#include <Eigen/Geometry>
+//#include <Eigen/Dense>
+//#include <Eigen/Geometry>
 #include <string>
 
-#include <rci/dto/JointAngles.h>
-#include <rci/dto/JointTorques.h>
-#include <rci/dto/JointVelocities.h>
-#include <rci/dto/JointAccelerations.h>
 #include <rci/dto/CartesianPose.h>
-
+//#include <rci/dto/CartesianVelocity.h>
+//#include <rci/dto/CartesianAcceleration.h>
 
 #include "CartesianSpace_CircularTask.hpp"
-
 
 class RttMotionPrimitiveWrapper: public RTT::TaskContext {
 public:
@@ -32,14 +28,25 @@ public:
 	void cleanupHook();
 
 protected:
+	double getSimulationTime();
+	double start_time;
+
+	CartesianSpace_CircularTask cart_task;
+
 	/**
 	 * OutputPorts publish data.
 	 */
-	RTT::OutputPort<rci::JointAnglesPtr> cmdJntPos_Port;
-	/**
-	 * InputPorts read data.
-	 */
-	RTT::InputPort<rci::JointAnglesPtr> currJntPos_Port;
-	RTT::FlowStatus currJntPos_Flow;
+	RTT::OutputPort<rci::PosePtr> cmdCartPos_Port;
+	RTT::OutputPort<rci::PosePtr> cmdCartVel_Port;
+	RTT::OutputPort<rci::PosePtr> cmdCartAcc_Port;
+
+	rci::PosePtr cmdCartPos;
+	rci::PosePtr cmdCartVel;
+	rci::PosePtr cmdCartAcc;
+
+	Eigen::VectorXd task_p;
+	Eigen::VectorXd task_pd;
+	Eigen::VectorXd task_pdd;
+
 };
 #endif
