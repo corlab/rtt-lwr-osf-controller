@@ -1,5 +1,5 @@
-#ifndef RTT_JPC_HPP
-#define RTT_JPC_HPP
+#pragma once
+
 // RTT includes
 #include <rtt/RTT.hpp>
 #include <rtt/base/RunnableInterface.hpp>
@@ -79,7 +79,7 @@ public:
 	RTT::FlowStatus refTaskEEAccOrientation_Flow;
 
 
-private:
+protected:
 	//output joint torque port
     rci::JointTorquesPtr cmdJntTrq;
 
@@ -171,4 +171,4 @@ private:
 //	Eigen::Vector3d QuaternionProductEuler;
 //	//stop variables for quaternion feedback stuff
 };
-#endif
+
