@@ -25,6 +25,7 @@ include_directories(include
 orocos_component(RTTController controller/rtt-lwr-osf-controller.cpp controller/rtt-lwr-osf-controller.hpp parsertools/KDLParser.cpp parsertools/KDLParser.hpp baseclasses/RTTArmControllerBase.cpp baseclasses/RTTArmControllerBase.hpp controller/TaskTest.cpp controller/TaskTest.hpp controller/JointTaskTest.hpp controller/JointTaskTest.cpp controller/QuinticPolynomial.hpp controller/QuinticPolynomial.cpp controller/CartesianSpace_CircularTask.hpp controller/CartesianSpace_CircularTask.cpp controller/FileWriterCSV.hpp controller/FileWriterCSV.cpp controller/OrientationHelper.hpp controller/OrientationHelper.cpp)
 
 orocos_component(RTTJointPositionController joint-position-controller/rtt-jpc.cpp joint-position-controller/rtt-jpc.hpp)
+orocos_component(RTTKhatibForceController khatib-force-controller/rtt-khatib.cpp khatib-force-controller/rtt-khatib.hpp)
 #
 # You may add multiple orocos_component statements.
 
@@ -39,3 +40,6 @@ orocos_component(RTTJointPositionController joint-position-controller/rtt-jpc.cp
 target_link_libraries(RTTController ${RCI_LIBRARIES} ${RSC_LIBRARIES} ${RSB_LIBRARIES} ${NemoMath_LIBRARIES} ${RTTToolchainTools_LIBRARIES} ${orocos_kdl_LIBRARIES} ${TINYXML_LIBRARIES})
 
 target_link_libraries(RTTJointPositionController ${RCI_LIBRARIES} ${RSC_LIBRARIES} ${RSB_LIBRARIES} ${NemoMath_LIBRARIES} ${RTTToolchainTools_LIBRARIES} ${orocos_kdl_LIBRARIES} ${TINYXML_LIBRARIES})
+
+target_link_libraries(RTTKhatibForceController ${RCI_LIBRARIES} ${RSC_LIBRARIES} ${RSB_LIBRARIES} ${NemoMath_LIBRARIES} ${RTTToolchainTools_LIBRARIES} ${orocos_kdl_LIBRARIES} ${TINYXML_LIBRARIES})
+
