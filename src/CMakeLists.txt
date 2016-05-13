@@ -22,7 +22,9 @@ include_directories(include
 # Creates a component library libmyrobot-<target>.so
 # and installs in the directory lib/orocos/myrobot/
 #
-orocos_component(RTTController controller/rtt-lwr-osf-controller.cpp controller/rtt-lwr-osf-controller.hpp parsertools/KDLParser.cpp parsertools/KDLParser.hpp baseclasses/RTTArmControllerBase.cpp baseclasses/RTTArmControllerBase.hpp controller/TaskTest.cpp controller/TaskTest.hpp controller/JointTaskTest.hpp controller/JointTaskTest.cpp controller/QuinticPolynomial.hpp controller/QuinticPolynomial.cpp controller/CartesianSpace_CircularTask.hpp controller/CartesianSpace_CircularTask.cpp controller/FileWriterCSV.hpp controller/FileWriterCSV.cpp controller/OrientationHelper.hpp controller/OrientationHelper.cpp controller/rtt-motion-primitive-wrapper.cpp controller/rtt-motion-primitive-wrapper.hpp)
+orocos_component(RTTController controller/rtt-lwr-osf-controller.cpp controller/rtt-lwr-osf-controller.hpp parsertools/KDLParser.cpp parsertools/KDLParser.hpp baseclasses/RTTArmControllerBase.cpp baseclasses/RTTArmControllerBase.hpp controller/TaskTest.cpp controller/TaskTest.hpp controller/JointTaskTest.hpp controller/JointTaskTest.cpp controller/QuinticPolynomial.hpp controller/QuinticPolynomial.cpp controller/CartesianSpace_CircularTask.hpp controller/CartesianSpace_CircularTask.cpp controller/FileWriterCSV.hpp controller/FileWriterCSV.cpp controller/OrientationHelper.hpp controller/OrientationHelper.cpp)
+
+orocos_component(RTTJointPositionController joint-position-controller/rtt-jpc.cpp joint-position-controller/rtt-jpc.hpp)
 #
 # You may add multiple orocos_component statements.
 
@@ -35,3 +37,5 @@ orocos_component(RTTController controller/rtt-lwr-osf-controller.cpp controller/
 #
 # You may add multiple orocos_install_headers statements.
 target_link_libraries(RTTController ${RCI_LIBRARIES} ${RSC_LIBRARIES} ${RSB_LIBRARIES} ${NemoMath_LIBRARIES} ${RTTToolchainTools_LIBRARIES} ${orocos_kdl_LIBRARIES} ${TINYXML_LIBRARIES})
+
+target_link_libraries(RTTJointPositionController ${RCI_LIBRARIES} ${RSC_LIBRARIES} ${RSB_LIBRARIES} ${NemoMath_LIBRARIES} ${RTTToolchainTools_LIBRARIES} ${orocos_kdl_LIBRARIES} ${TINYXML_LIBRARIES})
