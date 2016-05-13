@@ -24,37 +24,29 @@
 // BOOST includes
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
-// Parser include convert URDF/SDF into KDL::Chain
-#include "parsertools/KDLParser.hpp"
 
-class RTTJointPositionController: public RTT::TaskContext {
+class TorqueSuperposer: public RTT::TaskContext {
 public:
-    RTTJointPositionController(std::string const& name);
-    bool configureHook();
-    bool startHook();
-    void updateHook();
-    void stopHook();
-    void cleanupHook();
+	TorqueSuperposer(std::string const& name);
+	bool configureHook();
+	bool startHook();
+	void updateHook();
+	void stopHook();
+	void cleanupHook();
 
+protected:
+	RTT::OutputPort<rci::JointTorquesPtr> trq_out_port;
 
-    RTT::OutputPort<rci::JointTorquesPtr> cmdJntTrq_Port;
+	std::vector<boost::shared_ptr<RTT::InputPort<rci::JointTorquesPtr> > > trq_in_ports;
 
+	std::vector<RTT::FlowStatus> trq_in_flows;
 
-    RTT::InputPort<rci::JointAnglesPtr> currJntPos_Port;
-    RTT::FlowStatus currJntPos_Flow;
+	rci::JointTorquesPtr trqCmdOutput;
+	rci::JointTorquesPtr tmpTrqValue;
 
-    RTT::InputPort<rci::JointVelocitiesPtr> currJntVel_Port;
-    RTT::FlowStatus currJntVel_Flow;
-
-
-    RTT::InputPort<rci::JointAnglesPtr> refJntPos_Port;
-    RTT::FlowStatus refJntPos_Flow;
-
-    RTT::InputPort<rci::JointVelocitiesPtr> refJntVel_Port;
-    RTT::FlowStatus refJntVel_Flow;
-
-    rci::JointTorquesPtr trqCmdOutput;
-    rci::JointAnglesPtr currPositionFB;
-
+	int numberOfPorts;
+	int fixedNumPorts;
+	int dimensionOfInput;
+	std::vector<double> weights;
 };
 #endif

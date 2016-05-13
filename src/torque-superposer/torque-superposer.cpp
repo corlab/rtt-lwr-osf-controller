@@ -1,55 +1,63 @@
+#include "torque-superposer.hpp"
+
 #include <rtt/Component.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
 
+TorqueSuperposer::TorqueSuperposer(std::string const& name) :
+		RTT::TaskContext(name), numberOfPorts(2), dimensionOfInput(7), trq_out_port(
+				"output"), fixedNumPorts(2) {
 
-#include "rtt-jpc.hpp"
+	this->addProperty("numberOfPorts", numberOfPorts);
+	this->addProperty("dimensionOfInput", dimensionOfInput);
+}
 
+bool TorqueSuperposer::configureHook() {
+	fixedNumPorts = numberOfPorts;
+	trqCmdOutput = rci::JointTorques::create(dimensionOfInput, 0.0);
+	tmpTrqValue = rci::JointTorques::create(dimensionOfInput, 0.0);
 
-RTTJointPositionController::RTTJointPositionController(std::string const& name) : RTT::TaskContext(name), currJntPos_Flow(RTT::NoData) {
-    this->addPort("cmdJntTrq", cmdJntTrq_Port);
-    trqCmdOutput = rci::JointTorques::create(7, 0.0);
-    cmdJntTrq_Port.setDataSample(trqCmdOutput);
+	// set output port
+	trq_out_port.setDataSample(trqCmdOutput);
+	this->ports()->addPort(trq_out_port);
 
-    this->addPort("currJntPos", currJntPos_Port);
-    this->addPort("currJntVel", currJntVel_Port);
-    this->addPort("refJntPos", refJntPos_Port);
-    this->addPort("refJntVel", refJntVel_Port).doc("Reference Joint Velocity Port");
+	// set input port
+	for (int i = 0; i < fixedNumPorts; i++) {
+		boost::shared_ptr<RTT::InputPort<rci::JointTorquesPtr> > tmpPort(
+				new RTT::InputPort<rci::JointTorquesPtr>(
+						"input_" + boost::lexical_cast<std::string>(i)));
+		RTT::FlowStatus tmpFlow(RTT::NoData);
+		trq_in_ports.push_back(tmpPort);
+		trq_in_flows.push_back(tmpFlow);
+		weights.push_back(0.0);
+	}
+	return true;
+}
 
+bool TorqueSuperposer::startHook() {
+	return true;
+}
+
+void TorqueSuperposer::updateHook() {
+	for (int i = 0; i < fixedNumPorts; i++) {
+		if (trq_in_ports[i]->read(tmpTrqValue) != RTT::NoData) {
+			trqCmdOutput->setValues(
+					trqCmdOutput->asDoubleVector()
+							+ trqCmdOutput->asDoubleVector() * weights[i]);
+		}
+	}
+
+	if (trq_out_port.connected()) {
+		trq_out_port.write(trqCmdOutput);
+	}
+}
+
+void TorqueSuperposer::stopHook() {
 
 }
 
-bool RTTJointPositionController::configureHook() {
-    if (!(cmdJntTrq_Port.connected() && currJntPos_Port.connected() && currJntVel_Port.connected() && refJntPos_Port.connected() && refJntVel_Port.connected())) {
-        return false;
-    }
-    return true;
+void TorqueSuperposer::cleanupHook() {
+	this->ports()->clear();
 }
 
-bool RTTJointPositionController::startHook() {
-    return true;
-}
-
-void RTTJointPositionController::updateHook() {
-    currJntPos_Flow = currJntPos_Port.read(currPositionFB);
-    if (currJntPos_Flow == RTT::NewData) {
-
-    }
-
-    // calculations
-    //trqCmdOutput =
-
-
-    if (cmdJntTrq_Port.connected()) {
-        cmdJntTrq_Port.write(trqCmdOutput);
-    }
-}
-
-void RTTJointPositionController::stopHook() {
-
-}
-
-void RTTJointPositionController::cleanupHook() {
-
-}
-
-
-ORO_CREATE_COMPONENT_LIBRARY()ORO_LIST_COMPONENT_TYPE(RTTJointPositionController)
+ORO_CREATE_COMPONENT_LIBRARY()ORO_LIST_COMPONENT_TYPE(TorqueSuperposer)
