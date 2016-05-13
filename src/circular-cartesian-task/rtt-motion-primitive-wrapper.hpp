@@ -8,13 +8,8 @@
 #include <rtt/Property.hpp>
 #include <rtt/Attribute.hpp>
 
-//#include <Eigen/Dense>
-//#include <Eigen/Geometry>
+#include <iostream>
 #include <string>
-
-#include <rci/dto/CartesianPose.h>
-//#include <rci/dto/CartesianVelocity.h>
-//#include <rci/dto/CartesianAcceleration.h>
 
 #include "CartesianSpace_CircularTask.hpp"
 
@@ -33,20 +28,22 @@ protected:
 
 	CartesianSpace_CircularTask cart_task;
 
-	/**
-	 * OutputPorts publish data.
-	 */
-	RTT::OutputPort<rci::PosePtr> cmdCartPos_Port;
-	RTT::OutputPort<rci::PosePtr> cmdCartVel_Port;
-	RTT::OutputPort<rci::PosePtr> cmdCartAcc_Port;
+	//output translation ports
+	RTT::OutputPort<Eigen::Vector3d> cmdCartPosTranslation_Port;
+	RTT::OutputPort<Eigen::Vector3d> cmdCartVelTranslation_Port;
+	RTT::OutputPort<Eigen::Vector3d> cmdCartAccTranslation_Port;
 
-	rci::PosePtr cmdCartPos;
-	rci::PosePtr cmdCartVel;
-	rci::PosePtr cmdCartAcc;
+	//output orientation ports
+	RTT::OutputPort<Eigen::Vector3d> cmdCartPosOrientation_Port;
+	RTT::OutputPort<Eigen::Vector3d> cmdCartVelOrientation_Port;
+	RTT::OutputPort<Eigen::Vector3d> cmdCartAccOrientation_Port;
 
-	Eigen::VectorXd task_p;
-	Eigen::VectorXd task_pd;
-	Eigen::VectorXd task_pdd;
+	Eigen::Vector3d cmdCartPosTranslation;
+	Eigen::Vector3d cmdCartVelTranslation;
+	Eigen::Vector3d cmdCartAccTranslation;
+	Eigen::Vector3d cmdCartPosOrientation;
+	Eigen::Vector3d cmdCartVelOrientation;
+	Eigen::Vector3d cmdCartAccOrientation;
 
 };
 #endif

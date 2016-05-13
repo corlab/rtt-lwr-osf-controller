@@ -145,7 +145,7 @@ bool RTTKhatibForceController::startHook() {
 	Forces.resize(6);
 	Forces_cstr.resize(6);
 	tau_0.resize(numJoints);
-	N.resize(numJoints,numJoints)
+	N.resize(numJoints,numJoints);
 	P.resize(numJoints,numJoints);
 	jac_cstr_.resize(6, numJoints);
 	jac_cstr_MPI.resize(numJoints, 6);
