@@ -1,10 +1,7 @@
 #pragma once
 
 #include <eigen3/Eigen/Core>
-
-#include <kdl/frames.hpp>
-#include <kdl/frames_io.hpp>
-#include <kdl/framevel.hpp>
+#include <cmath>
 
 class CartesianSpace_CircularTask {
 public:
@@ -24,6 +21,7 @@ public:
     void getVelocityOrientation(double time, Eigen::Vector3d & ret);
     void getAccelerationOrientation(double time, Eigen::Vector3d & ret);
 
+protected:
     double radius;
     double start_time;
     double _timescale;
@@ -31,7 +29,5 @@ public:
     Eigen::MatrixXd BoardRot;
     Eigen::VectorXd BoardTransl, TipOrientation;
     Eigen::VectorXd tmp;
-
-
 };
 

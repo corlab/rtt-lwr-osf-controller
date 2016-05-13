@@ -1,7 +1,4 @@
 #include "CartesianSpace_CircularTask.hpp"
-#include <rtt/RTT.hpp>
-#include <cmath>
-
 
 CartesianSpace_CircularTask::CartesianSpace_CircularTask(double _start_time, double _timescale){
     this->start_time = _start_time;

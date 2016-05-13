@@ -15,7 +15,7 @@
 
 class RttMotionPrimitiveWrapper: public RTT::TaskContext {
 public:
-	RttMotionPrimitiveWrapper(std::string const& name);
+	RttMotionPrimitiveWrapper(std::string const& name, double start_time);
 	bool configureHook();
 	bool startHook();
 	void updateHook();
