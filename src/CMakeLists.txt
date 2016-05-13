@@ -27,11 +27,11 @@ include_directories(include
 
 orocos_component(RTTQuinticJointPositionTask joint-position-task/QuinticPolynomial.cpp joint-position-task/QuinticPolynomial.hpp joint-position-task/rtt-QuinticPolynomial-wrapper.cpp joint-position-task/rtt-QuinticPolynomial-wrapper.hpp)
 
-#orocos_component(RTTCircularCartesianTask circular-cartesian-task/CartesianSpace_CircularTask.cpp circular-cartesian-task/CartesianSpace_CircularTask.hpp circular-cartesian-task/rtt-motion-primitive-wrapper.cpp circular-cartesian-task/rtt-motion-primitive-wrapper.hpp)
+orocos_component(RTTCircularCartesianTask circular-cartesian-task/CartesianSpace_CircularTask.cpp circular-cartesian-task/CartesianSpace_CircularTask.hpp circular-cartesian-task/rtt-motion-primitive-wrapper.cpp circular-cartesian-task/rtt-motion-primitive-wrapper.hpp)
 
-#orocos_component(RTTJointPositionController joint-position-controller/rtt-jpc.cpp joint-position-controller/rtt-jpc.hpp)
+orocos_component(RTTJointPositionController joint-position-controller/rtt-jpc.cpp joint-position-controller/rtt-jpc.hpp)
 
-#orocos_component(RTTKhatibForceController khatib-force-controller/rtt-khatib.cpp khatib-force-controller/rtt-khatib.hpp)
+orocos_component(RTTKhatibForceController khatib-force-controller/rtt-khatib.cpp khatib-force-controller/rtt-khatib.hpp)
 
 
 #
@@ -50,9 +50,9 @@ orocos_component(RTTQuinticJointPositionTask joint-position-task/QuinticPolynomi
 
 target_link_libraries(RTTQuinticJointPositionTask ${RCI_LIBRARIES} ${RSC_LIBRARIES} ${RSB_LIBRARIES} ${NemoMath_LIBRARIES} ${RTTToolchainTools_LIBRARIES} ${orocos_kdl_LIBRARIES} ${TINYXML_LIBRARIES})
 
-#target_link_libraries(RTTCircularCartesianTask ${RCI_LIBRARIES} ${RSC_LIBRARIES} ${RSB_LIBRARIES} ${NemoMath_LIBRARIES} ${RTTToolchainTools_LIBRARIES} ${orocos_kdl_LIBRARIES} ${TINYXML_LIBRARIES})
+target_link_libraries(RTTCircularCartesianTask ${RCI_LIBRARIES} ${RSC_LIBRARIES} ${RSB_LIBRARIES} ${NemoMath_LIBRARIES} ${RTTToolchainTools_LIBRARIES} ${orocos_kdl_LIBRARIES} ${TINYXML_LIBRARIES})
 
-#target_link_libraries(RTTJointPositionController ${RCI_LIBRARIES} ${RSC_LIBRARIES} ${RSB_LIBRARIES} ${NemoMath_LIBRARIES} ${RTTToolchainTools_LIBRARIES} ${orocos_kdl_LIBRARIES} ${TINYXML_LIBRARIES})
+target_link_libraries(RTTJointPositionController ${RCI_LIBRARIES} ${RSC_LIBRARIES} ${RSB_LIBRARIES} ${NemoMath_LIBRARIES} ${RTTToolchainTools_LIBRARIES} ${orocos_kdl_LIBRARIES} ${TINYXML_LIBRARIES})
 
-#target_link_libraries(RTTKhatibForceController ${RCI_LIBRARIES} ${RSC_LIBRARIES} ${RSB_LIBRARIES} ${NemoMath_LIBRARIES} ${RTTToolchainTools_LIBRARIES} ${orocos_kdl_LIBRARIES} ${TINYXML_LIBRARIES})
+target_link_libraries(RTTKhatibForceController ${RCI_LIBRARIES} ${RSC_LIBRARIES} ${RSB_LIBRARIES} ${NemoMath_LIBRARIES} ${RTTToolchainTools_LIBRARIES} ${orocos_kdl_LIBRARIES} ${TINYXML_LIBRARIES})
 
