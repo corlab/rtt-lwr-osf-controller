@@ -10,6 +10,10 @@ TorqueSuperposer::TorqueSuperposer(std::string const& name) :
 
 	this->addProperty("numberOfPorts", numberOfPorts);
 	this->addProperty("dimensionOfInput", dimensionOfInput);
+
+	weights.resize(numberOfPorts);
+	this->addProperty("weights", weights);
+
 }
 
 bool TorqueSuperposer::configureHook() {
@@ -29,7 +33,7 @@ bool TorqueSuperposer::configureHook() {
 		RTT::FlowStatus tmpFlow(RTT::NoData);
 		trq_in_ports.push_back(tmpPort);
 		trq_in_flows.push_back(tmpFlow);
-		weights.push_back(0.0);
+//		weights.push_back(0.0);
 	}
 	return true;
 }
