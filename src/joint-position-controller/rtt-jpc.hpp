@@ -25,36 +25,61 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 // Parser include convert URDF/SDF into KDL::Chain
-#include "parsertools/KDLParser.hpp"
+//#include "parsertools/KDLParser.hpp"
 
 class RTTJointPositionController: public RTT::TaskContext {
 public:
-    RTTJointPositionController(std::string const& name);
+    RTTJointPositionController(std::string const& name, unsigned int numJoints);
     bool configureHook();
     bool startHook();
     void updateHook();
     void stopHook();
     void cleanupHook();
 
-
+    //output joint torque port
     RTT::OutputPort<rci::JointTorquesPtr> cmdJntTrq_Port;
 
-
-    RTT::InputPort<rci::JointAnglesPtr> currJntPos_Port;
+    //input joint ports
+    //RTT::InputPort<rci::JointAnglesPtr> currJntPos_Port;
+    RTT::InputPort<Eigen::VectorXd> currJntPos_Port;
     RTT::FlowStatus currJntPos_Flow;
 
-    RTT::InputPort<rci::JointVelocitiesPtr> currJntVel_Port;
+    //RTT::InputPort<rci::JointVelocitiesPtr> currJntVel_Port;
+    RTT::InputPort<Eigen::VectorXd> currJntVel_Port;
     RTT::FlowStatus currJntVel_Flow;
 
-
-    RTT::InputPort<rci::JointAnglesPtr> refJntPos_Port;
+    //RTT::InputPort<rci::JointAnglesPtr> refJntPos_Port;
+    RTT::InputPort<Eigen::VectorXd> refJntPos_Port;
     RTT::FlowStatus refJntPos_Flow;
 
-    RTT::InputPort<rci::JointVelocitiesPtr> refJntVel_Port;
+    //RTT::InputPort<rci::JointVelocitiesPtr> refJntVel_Port;
+    RTT::InputPort<Eigen::VectorXd> refJntVel_Port;
     RTT::FlowStatus refJntVel_Flow;
 
-    rci::JointTorquesPtr trqCmdOutput;
-    rci::JointAnglesPtr currPositionFB;
+protected:
+    //output joint torque port
+    rci::JointTorquesPtr cmdJntTrq_;
+    Eigen::VectorXd cmdJntTrq;
+
+    //rci::JointAnglesPtr currJntPositionFB;
+
+    //input joint ports
+    Eigen::VectorXd currJntPos;
+    Eigen::VectorXd currJntVel;
+    Eigen::VectorXd refJntPos;
+    Eigen::VectorXd refJntVel;
+
+    Eigen::VectorXd Kp, Kd;
+
+    // parameters from config-file
+    double Kp_StiffnessGain;
+    double Kd_DampingGain;
+
+    //other stuff
+    unsigned int numJoints;
+
+    //dynamic properties
+    KDL::JntArray G_;
 
 };
 #endif
