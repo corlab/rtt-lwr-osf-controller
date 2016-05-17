@@ -147,6 +147,7 @@ protected:
 	Eigen::MatrixXd C_cstr_;
 	Eigen::VectorXd lambda_des;
 
+	Eigen::VectorXd cmdJntTrq_tmp;
 	Eigen::VectorXd jnt_trq_cmd_Motion_Khatib, jnt_trq_cmd_Nullspace_Khatib;
 	Eigen::VectorXd jnt_trq_cmd_Motion_Projected, jnt_trq_cmd_Nullspace_Projected, jnt_trq_cmd_Force_Projected;
 

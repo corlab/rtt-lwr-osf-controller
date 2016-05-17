@@ -156,6 +156,7 @@ bool RTTKhatibForceController::startHook() {
     lambda_des.setConstant(0.0);
 	lambda_des[2] = -5; //desired endeffector force, use z-axis here
 
+	cmdJntTrq_tmp.resize(numJoints);
 	jnt_trq_cmd_Motion_Khatib.resize(numJoints);
 	jnt_trq_cmd_Nullspace_Khatib.resize(numJoints);
 	jnt_trq_cmd_Motion_Projected.resize(numJoints);
@@ -289,7 +290,7 @@ void RTTKhatibForceController::updateHook() {
 		jnt_trq_cmd_Nullspace_Khatib = N * tau_0;
 		//Stop Khatib nullspace controller
 
-		cmdJntTrq = jnt_trq_cmd_Motion_Khatib + 0.1 * jnt_trq_cmd_Nullspace_Khatib;
+		cmdJntTrq_tmp = jnt_trq_cmd_Motion_Khatib + 0.1 * jnt_trq_cmd_Nullspace_Khatib;
 	}
 	else{
 	    //Start compute constrained jacobian
@@ -326,11 +327,17 @@ void RTTKhatibForceController::updateHook() {
 		jnt_trq_cmd_Force_Projected = (identity77 - P) * (h) + jac_cstr_.transpose() * lambda_des + (identity77 - P) * M_.data * M_cstr_.inverse() * (P * M_.data * currJntAcc + C_cstr_ * currJntVel );
         //Stop external forces controller
 
-		cmdJntTrq = jnt_trq_cmd_Motion_Projected + 0.1 * jnt_trq_cmd_Nullspace_Projected + jnt_trq_cmd_Force_Projected;
+		cmdJntTrq_tmp = jnt_trq_cmd_Motion_Projected + 0.1 * jnt_trq_cmd_Nullspace_Projected + jnt_trq_cmd_Force_Projected;
 	}
 
 
     if (cmdJntTrq_Port.connected()) {
+    	// convert eigen back to rci
+    	for (int i = 0; i < numJoints; i++) {
+    		outJntTrq->setFromNm(i, cmdJntTrq_tmp[i]);
+    	}
+
+    	// write torques to robot
         cmdJntTrq_Port.write(cmdJntTrq);
     }
 }
