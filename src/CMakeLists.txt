@@ -1,4 +1,36 @@
+#
+# This is based on orocos sample cmakelists, modified slightly
+# The find_package macro for Orocos-RTT works best with
+# cmake >= 2.8.3
+#
+cmake_minimum_required(VERSION 2.8.3)
+ 
+#
+# This creates a standard cmake project. You may extend this file with
+# any cmake macro you see fit.
+#
+project(LWRController)
+ 
+# current source and include:
+#include_directories(${PROJECT_SOURCE_DIR}/include)
 
+ 
+# Set the CMAKE_PREFIX_PATH in case you're not using Orocos through ROS
+# for helping these find commands find RTT.
+find_package(OROCOS-RTT REQUIRED ${RTT_HINTS})
+if (NOT OROCOS-RTT_FOUND)
+  message (FATAL_ERROR "\nCould not find Orocos. Please use the shell command\n 'source orocos_toolchain/env.sh' and then run cmake again.")
+endif()
+
+find_package(rtt-core-extensions REQUIRED)
+include_directories(${RTT-CORE-EXTENSIONS_INCLUDE_DIRS})
+link_directories(${RTT-CORE-EXTENSIONS_LIBRARY_DIRS})
+
+
+# Defines the orocos_* cmake macros. See that file for additional
+# documentation.
+include(${OROCOS-RTT_USE_FILE_PATH}/UseOROCOS-RTT.cmake)
+ 
 #
 # Components, types and plugins.
 #
@@ -6,53 +38,68 @@
 # macros below, except for orocos_typegen_headers, where the target is fully
 # controlled by generated code of 'typegen'.
 #
-
-include_directories(include
-  ${RCI_INCLUDE_DIRS}
-  ${RSC_INCLUDE_DIRS}
-  ${RSB_INCLUDE_DIRS}
-#  ${Eigen_INCLUDE_DIR}
-  ${USE_OROCOS_INCLUDE_DIRS}
-  ${NemoMath_INCLUDE_DIRS}
-  ${RTTToolchainTools_INCLUDE_DIRS}
-  ${orocos_kdl_INCLUDE_DIRS}
-  ${TINYXML_INCLUDE_DIRS}
-  )
-
-# Creates a component library libmyrobot-<target>.so
-# and installs in the directory lib/orocos/myrobot/
+ 
+ 
+# Creates a component library libexample-<target>.so
+# and installs in the directory lib/orocos/example/
 #
-
-#orocos_component(RTTController controller/rtt-lwr-osf-controller.cpp controller/rtt-lwr-osf-controller.hpp parsertools/KDLParser.cpp parsertools/KDLParser.hpp baseclasses/RTTArmControllerBase.cpp baseclasses/RTTArmControllerBase.hpp controller/TaskTest.cpp controller/TaskTest.hpp controller/JointTaskTest.hpp controller/JointTaskTest.cpp controller/QuinticPolynomial.hpp controller/QuinticPolynomial.cpp controller/FileWriterCSV.hpp controller/FileWriterCSV.cpp controller/OrientationHelper.hpp controller/OrientationHelper.cpp)
-
-orocos_component(RTTQuinticJointPositionTask joint-position-task/QuinticPolynomial.cpp joint-position-task/QuinticPolynomial.hpp joint-position-task/rtt-QuinticPolynomial-wrapper.cpp joint-position-task/rtt-QuinticPolynomial-wrapper.hpp)
-
-orocos_component(RTTCircularCartesianTask circular-cartesian-task/CartesianSpace_CircularTask.cpp circular-cartesian-task/CartesianSpace_CircularTask.hpp circular-cartesian-task/rtt-motion-primitive-wrapper.cpp circular-cartesian-task/rtt-motion-primitive-wrapper.hpp)
-
-orocos_component(RTTJointPositionController joint-position-controller/rtt-jpc.cpp joint-position-controller/rtt-jpc.hpp)
-
-orocos_component(RTTKhatibForceController khatib-force-controller/rtt-khatib.cpp khatib-force-controller/rtt-khatib.hpp)
-
-
+# orocos_component(${CMAKE_PROJECT_NAME} simple-rtt-component.hpp simple-rtt-component.cpp) # ...you may add multiple source files
+orocos_component(${CMAKE_PROJECT_NAME}
+                                        ${PROJECT_SOURCE_DIR}/torque-superposer/TorqueSuperimposer.hpp
+                                        ${PROJECT_SOURCE_DIR}/torque-superposer/TorqueSuperimposer.cpp
+) # ...you may add multiple source files
 #
 # You may add multiple orocos_component statements.
+ 
+#
+# Building a typekit (recommended):
+#
+# Creates a typekit library libexample-types-<target>.so
+# and installs in the directory lib/orocos/example/types/
+#
+#orocos_typegen_headers(example-types.hpp) # ...you may add multiple header files
+#
+# You may only have *ONE* orocos_typegen_headers statement !
+ 
+#
+# Building a normal library (optional):
+#
+# Creates a library libsupport-<target>.so and installs it in
+# lib/
+#
+#orocos_library(support support.cpp) # ...you may add multiple source files
+#
+# You may add multiple orocos_library statements.
+ 
+ 
+#
+# Building a Plugin or Service (optional):
+#
+# Creates a plugin library libexample-service-<target>.so or libexample-plugin-<target>.so
+# and installs in the directory lib/orocos/example/plugins/
+#
+# Be aware that a plugin may only have the loadRTTPlugin() function once defined in a .cpp file.
+# This function is defined by the plugin and service CPP macros.
+#
+#orocos_service(example-service example-service.cpp) # ...only one service per library !
+#orocos_plugin(example-plugin example-plugin.cpp) # ...only one plugin function per library !
+#
+# You may add multiple orocos_plugin/orocos_service statements.
 
+# target_link_libraries()
+target_link_libraries(${CMAKE_PROJECT_NAME} ${RST-RT_LIBRARIES} ${RTT-CORE-EXTENSIONS_LIBRARIES})
+ 
 #
-# Additional headers:
+# Additional headers (not in typekit):
 #
-# Installs in the include/orocos/myrobot/ directory
+# Installs in the include/orocos/example/ directory
 #
-# orocos_install_headers(rtt-controller-component.hpp)
+# orocos_install_headers( example-component.hpp ) # ...you may add multiple header files
 #
 # You may add multiple orocos_install_headers statements.
-
-#target_link_libraries(RTTController ${RCI_LIBRARIES} ${RSC_LIBRARIES} ${RSB_LIBRARIES} ${NemoMath_LIBRARIES} ${RTTToolchainTools_LIBRARIES} ${orocos_kdl_LIBRARIES} ${TINYXML_LIBRARIES})
-
-target_link_libraries(RTTQuinticJointPositionTask ${RCI_LIBRARIES} ${RSC_LIBRARIES} ${RSB_LIBRARIES} ${NemoMath_LIBRARIES} ${RTTToolchainTools_LIBRARIES} ${orocos_kdl_LIBRARIES} ${TINYXML_LIBRARIES})
-
-target_link_libraries(RTTCircularCartesianTask ${RCI_LIBRARIES} ${RSC_LIBRARIES} ${RSB_LIBRARIES} ${NemoMath_LIBRARIES} ${RTTToolchainTools_LIBRARIES} ${orocos_kdl_LIBRARIES} ${TINYXML_LIBRARIES})
-
-target_link_libraries(RTTJointPositionController ${RCI_LIBRARIES} ${RSC_LIBRARIES} ${RSB_LIBRARIES} ${NemoMath_LIBRARIES} ${RTTToolchainTools_LIBRARIES} ${orocos_kdl_LIBRARIES} ${TINYXML_LIBRARIES})
-
-target_link_libraries(RTTKhatibForceController ${RCI_LIBRARIES} ${RSC_LIBRARIES} ${RSB_LIBRARIES} ${NemoMath_LIBRARIES} ${RTTToolchainTools_LIBRARIES} ${orocos_kdl_LIBRARIES} ${TINYXML_LIBRARIES})
-
+ 
+#
+# Generates and installs our package. Must be the last statement such
+# that it can pick up all above settings.
+#
+orocos_generate_package()
