@@ -47,6 +47,8 @@ include(${OROCOS-RTT_USE_FILE_PATH}/UseOROCOS-RTT.cmake)
 orocos_component(${CMAKE_PROJECT_NAME}
                                         ${PROJECT_SOURCE_DIR}/torque-superposer/TorqueSuperimposer.hpp
                                         ${PROJECT_SOURCE_DIR}/torque-superposer/TorqueSuperimposer.cpp
+                                        ${PROJECT_SOURCE_DIR}/nullspace-controller/NullspaceController.hpp
+                                        ${PROJECT_SOURCE_DIR}/nullspace-controller/NullspaceController.cpp
 ) # ...you may add multiple source files
 #
 # You may add multiple orocos_component statements.
