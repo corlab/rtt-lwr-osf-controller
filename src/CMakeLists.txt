@@ -49,6 +49,8 @@ orocos_component(${CMAKE_PROJECT_NAME}
                                         ${PROJECT_SOURCE_DIR}/torque-superposer/TorqueSuperimposer.cpp
                                         ${PROJECT_SOURCE_DIR}/nullspace-controller/NullspaceController.hpp
                                         ${PROJECT_SOURCE_DIR}/nullspace-controller/NullspaceController.cpp
+                                        ${PROJECT_SOURCE_DIR}/position-controller/PositionController.hpp
+                                        ${PROJECT_SOURCE_DIR}/position-controller/PositionController.cpp
 ) # ...you may add multiple source files
 #
 # You may add multiple orocos_component statements.
