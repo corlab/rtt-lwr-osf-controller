@@ -13,11 +13,15 @@ PositionController::PositionController(std::string const & name) : RTT::TaskCont
     addOperation("setDOFsize", &PositionController::setDOFsize, this).doc("set DOF size");
 
     //other stuff
-    gainP_position = 100;
-    gainD_position = 20;
-    gainP_orientation = 100;
-    gainD_orientation = 20;
-
+    gainP = 100;
+    gainD = 20;
+    receiveTranslationOnly = true;
+    if(receiveTranslationOnly){
+        TaskSpaceDimension = 3;
+    }
+    else{
+        TaskSpaceDimension = 6;
+    }
     portsArePrepared = false;
 }
 
@@ -30,33 +34,14 @@ bool PositionController::startHook() {
 }
 
 void PositionController::updateHook() {
-    //update desired angles only when new weight-vector is received
+    // cartesian task
+    in_desiredTaskSpacePosition_flow = in_desiredTaskSpacePosition_port.read(in_desiredTaskSpacePosition_var);
+    in_desiredTaskSpaceVelocity_flow = in_desiredTaskSpaceVelocity_port.read(in_desiredTaskSpaceVelocity_var);
+    in_desiredTaskSpaceAcceleration_flow = in_desiredTaskSpaceAcceleration_port.read(in_desiredTaskSpaceAcceleration_var);
 
-    // to be done???
-
-    //if (in_desiredAngles_port.connected()) {
-    //    in_desiredAngles_flow = in_desiredAngles_port.read(in_desiredAngles_var);
-    //    if (in_desiredAngles_flow == RTT::NewData){
-    //        current_desiredAngles = in_desiredAngles_var;
-    //    }
-    //}
-
-    // position
-    in_desiredPos_flow = in_desiredPos_port.read(in_desiredPos_var);
-    in_desiredPosVelocity_flow = in_desiredPosVelocity_port.read(in_desiredPosVelocity_var);
-    in_desiredPosAcceleration_flow = in_desiredPosAcceleration_port.read(in_desiredPosAcceleration_var);
-
-    in_currentPos_flow = in_currentPos_port.read(in_currentPos_var);
-    in_currentPosVelocity_flow = in_currentPosVelocity_port.read(in_currentPosVelocity_var);
+    in_currentTaskSpacePosition_flow = in_currentTaskSpacePosition_port.read(in_currentTaskSpacePosition_var);
+    in_currentTaskSpaceVelocity_flow = in_currentTaskSpaceVelocity_port.read(in_currentTaskSpaceVelocity_var);
     in_currentJntVelocity_flow = in_currentJntVelocity_port.read(in_currentJntVelocity_var);
-
-    // orientation
-    in_desiredOrt_flow = in_desiredOrt_port.read(in_desiredOrt_var);
-    in_desiredOrtVelocity_flow = in_desiredOrtVelocity_port.read(in_desiredOrtVelocity_var);
-    in_desiredOrtAcceleration_flow = in_desiredOrtAcceleration_port.read(in_desiredOrtAcceleration_var);
-
-    in_currentOrt_flow = in_currentOrt_port.read(in_currentOrt_var);
-    in_currentOrtVelocity_flow = in_currentOrtVelocity_port.read(in_currentOrtVelocity_var);
 
 
     in_jacobian_flow = in_jacobian_port.read(in_jacobian_var);
@@ -67,19 +52,8 @@ void PositionController::updateHook() {
     in_P_flow = in_P_port.read(in_P_var);
     in_constraintC_flow = in_constraintC_port.read(in_constraintC_var);
 
-    // reference acceleration for position
-    ref_PosAcceleration = in_desiredPosAcceleration_var + gainP_position * (in_desiredPos_var - in_currentPos_var) + gainD_position * (in_desiredPosVelocity_var - in_currentPosVelocity_var);
-
-    // reference acceleration for orientation
-    ref_OrtAcceleration = in_desiredOrtAcceleration_var + gainP_orientation * (in_desiredOrt_var - in_currentOrt_var) + gainD_orientation * (in_desiredOrtVelocity_var - in_currentOrtVelocity_var);
-
-    // reference accelerartion for orientation
-    ref_Acceleration(0) = ref_PosAcceleration(0);
-    ref_Acceleration(1) = ref_PosAcceleration(1);
-    ref_Acceleration(2) = ref_PosAcceleration(2);
-    ref_Acceleration(3) = ref_OrtAcceleration(0);
-    ref_Acceleration(4) = ref_OrtAcceleration(1);
-    ref_Acceleration(5) = ref_OrtAcceleration(2);
+    // reference acceleration for cartesian task
+    ref_Acceleration = in_desiredTaskSpaceAcceleration_var + gainP * (in_desiredTaskSpacePosition_var - in_currentTaskSpacePosition_var) + gainD * (in_desiredTaskSpaceVelocity_var - in_currentTaskSpaceVelocity_var);
 
     //Start Khatib projected endeffector motion controller
     constraintForce = in_constraintLambda_var * ref_Acceleration;
@@ -100,27 +74,20 @@ void PositionController::cleanupHook() {
 void PositionController::setDOFsize(unsigned int DOFsize){
     assert(DOFsize > 0);
     this->DOFsize = DOFsize;
-    ref_OrtAcceleration = Eigen::VectorXf::Zero(3);
-    ref_Acceleration = Eigen::VectorXf::Zero(6);
+    ref_Acceleration = Eigen::VectorXf::Zero(TaskSpaceDimension);
+    constraintForce = Eigen::VectorXf::Zero(TaskSpaceDimension);
     this->preparePorts();
 }
 
 void PositionController::preparePorts(){
     if (portsArePrepared){
-        ports()->removePort("in_desiredPos_port");  //1
-        ports()->removePort("in_desiredPosVelocity_port");  //2
-        ports()->removePort("in_desiredPosAcceleration_port");  //3
+        ports()->removePort("in_desiredTaskSpacePosition_port");  //1
+        ports()->removePort("in_desiredTaskSpaceVelocity_port");  //2
+        ports()->removePort("in_desiredTaskSpaceAcceleration_port");  //3
 
-        ports()->removePort("in_currentPos_port");  //4
-        ports()->removePort("in_currentPosVelocity_port");  //5
+        ports()->removePort("in_currentTaskSpacePosition_port");  //4
+        ports()->removePort("in_currentTaskSpaceVelocity_port");  //5
         ports()->removePort("in_currentJntVelocity_port");  //6
-
-        ports()->removePort("in_desiredOrt_port");  //7
-        ports()->removePort("in_desiredOrtVelocity_port");  //8
-        ports()->removePort("in_desiredOrtAcceleration_port");  //9
-
-        ports()->removePort("in_currentOrt_port");  //10
-        ports()->removePort("in_currentOrtVelocity_port");  //11
 
         ports()->removePort("in_jacobian_port");    //12
         ports()->removePort("in_jacobianDot_port");     //13
@@ -136,85 +103,55 @@ void PositionController::preparePorts(){
 
     //prepare input
     //1
-    in_desiredPos_var = Eigen::VectorXf(3);
-    in_desiredPos_port.setName("in_desiredPos_port");
-    in_desiredPos_port.doc("Input port for reading the desired position from Trajectory Generator");
-    ports()->addPort(in_desiredPos_port);
-    in_desiredPos_flow = RTT::NoData;
+    in_desiredTaskSpacePosition_var = Eigen::VectorXf(TaskSpaceDimension);
+    in_desiredTaskSpacePosition_port.setName("in_desiredTaskSpacePosition_port");
+    in_desiredTaskSpacePosition_port.doc("Input port for reading the desired position from Trajectory Generator");
+    ports()->addPort(in_desiredTaskSpacePosition_port);
+    in_desiredTaskSpacePosition_flow = RTT::NoData;
     //2
-    in_desiredPosVelocity_var = Eigen::VectorXf(3);
-    in_desiredPosVelocity_port.setName("in_desiredPosVelocity_port");
-    in_desiredPosVelocity_port.doc("Input port for reading the desired velocity from Trajectory Generator");
-    ports()->addPort(in_desiredPosVelocity_port);
-    in_desiredPosVelocity_flow = RTT::NoData;
+    in_desiredTaskSpaceVelocity_var = Eigen::VectorXf(TaskSpaceDimension);
+    in_desiredTaskSpaceVelocity_port.setName("in_desiredTaskSpaceVelocity_port");
+    in_desiredTaskSpaceVelocity_port.doc("Input port for reading the desired velocity from Trajectory Generator");
+    ports()->addPort(in_desiredTaskSpaceVelocity_port);
+    in_desiredTaskSpaceVelocity_flow = RTT::NoData;
     //3
-    in_desiredPosAcceleration_var = Eigen::VectorXf(3);
-    in_desiredPosAcceleration_port.setName("in_desiredPosAcceleration_port");
-    in_desiredPosAcceleration_port.doc("Input port for reading the desired acceleration from Trajectory Generator");
-    ports()->addPort(in_desiredPosAcceleration_port);
-    in_desiredPosAcceleration_flow = RTT::NoData;
+    in_desiredTaskSpaceAcceleration_var = Eigen::VectorXf(TaskSpaceDimension);
+    in_desiredTaskSpaceAcceleration_port.setName("in_desiredTaskSpaceAcceleration_port");
+    in_desiredTaskSpaceAcceleration_port.doc("Input port for reading the desired acceleration from Trajectory Generator");
+    ports()->addPort(in_desiredTaskSpaceAcceleration_port);
+    in_desiredTaskSpaceAcceleration_flow = RTT::NoData;
     //4
-    in_currentPos_var = Eigen::VectorXf(3);
-    in_currentPos_port.setName("in_currentPos_port");
-    in_currentPos_port.doc("Input port for reading the current position");
-    ports()->addPort(in_currentPos_port);
-    in_currentPos_flow = RTT::NoData;
+    in_currentTaskSpacePosition_var = Eigen::VectorXf(TaskSpaceDimension);
+    in_currentTaskSpacePosition_port.setName("in_currentTaskSpacePosition_port");
+    in_currentTaskSpacePosition_port.doc("Input port for reading the current position");
+    ports()->addPort(in_currentTaskSpacePosition_port);
+    in_currentTaskSpacePosition_flow = RTT::NoData;
     //5
-    in_currentPosVelocity_var = Eigen::VectorXf(3);
-    in_currentPosVelocity_port.setName("in_currentPosVelocity_port");
-    in_currentPosVelocity_port.doc("Input port for reading the current position velocity");
-    ports()->addPort(in_currentPosVelocity_port);
-    in_currentPosVelocity_flow = RTT::NoData;
+    in_currentTaskSpaceVelocity_var = Eigen::VectorXf(TaskSpaceDimension);
+    in_currentTaskSpaceVelocity_port.setName("in_currentTaskSpaceVelocity_port");
+    in_currentTaskSpaceVelocity_port.doc("Input port for reading the current position velocity");
+    ports()->addPort(in_currentTaskSpaceVelocity_port);
+    in_currentTaskSpaceVelocity_flow = RTT::NoData;
     //6
     in_currentJntVelocity_var = rstrt::kinematics::JointVelocities(DOFsize);
     in_currentJntVelocity_port.setName("in_currentJntVelocity_port");
     in_currentJntVelocity_port.doc("Input port for reading the joint velocity");
     ports()->addPort(in_currentJntVelocity_port);
     in_currentJntVelocity_flow = RTT::NoData;
-    //7
-    in_desiredOrt_var = Eigen::VectorXf(3);
-    in_desiredOrt_port.setName("in_desiredOrt_port");
-    in_desiredOrt_port.doc("Input port for reading the desired orientation from Trajectory Generator");
-    ports()->addPort(in_desiredOrt_port);
-    in_desiredOrt_flow = RTT::NoData;
-    //8
-    in_desiredOrtVelocity_var = Eigen::VectorXf(3);
-    in_desiredOrtVelocity_port.setName("in_desiredOrtVelocity_port");
-    in_desiredOrtVelocity_port.doc("Input port for reading the desired orientation velocity from Trajectory Generator");
-    ports()->addPort(in_desiredOrtVelocity_port);
-    in_desiredOrtVelocity_flow = RTT::NoData;
-    //9
-    in_desiredOrtAcceleration_var = Eigen::VectorXf(3);
-    in_desiredOrtAcceleration_port.setName("in_desiredOrtAcceleration_port");
-    in_desiredOrtAcceleration_port.doc("Input port for reading the desired orientation acceleration from Trajectory Generator");
-    ports()->addPort(in_desiredOrtAcceleration_port);
-    in_desiredOrtAcceleration_flow = RTT::NoData;
-    //10
-    in_currentOrt_var = Eigen::VectorXf(3);
-    in_currentOrt_port.setName("in_currentOrt_port");
-    in_currentOrt_port.doc("Input port for reading the current orientation");
-    ports()->addPort(in_currentOrt_port);
-    in_currentOrt_flow = RTT::NoData;
-    //11
-    in_currentOrtVelocity_var = Eigen::VectorXf(3);
-    in_currentOrtVelocity_port.setName("in_currentOrtVelocity_port");
-    in_currentOrtVelocity_port.doc("Input port for reading the current orientation velocity");
-    ports()->addPort(in_currentOrtVelocity_port);
-    in_currentOrtVelocity_flow = RTT::NoData;
     //12
-    in_jacobian_var = Eigen::MatrixXf(6,DOFsize);
+    in_jacobian_var = Eigen::MatrixXf(TaskSpaceDimension,DOFsize);
     in_jacobian_port.setName("in_jacobian_port");
     in_jacobian_port.doc("Input port for reading the jacobian");
     ports()->addPort(in_jacobian_port);
     in_jacobian_flow = RTT::NoData;
     //13
-    in_jacobianDot_var = Eigen::MatrixXf(6,DOFsize);
+    in_jacobianDot_var = Eigen::MatrixXf(TaskSpaceDimension,DOFsize);
     in_jacobianDot_port.setName("in_jacobianDot_port");
     in_jacobianDot_port.doc("Input port for reading the derivative of jacobian");
     ports()->addPort(in_jacobianDot_port);
     in_jacobianDot_flow = RTT::NoData;
     //14
-    in_constraintLambda_var = Eigen::MatrixXf(6,6);
+    in_constraintLambda_var = Eigen::MatrixXf(TaskSpaceDimension,TaskSpaceDimension);
     in_constraintLambda_port.setName("in_constraintLambda_port");
     in_constraintLambda_port.doc("Input port for reading the constraint Lambda (after Eq. (11) of the paper)");
     ports()->addPort(in_constraintLambda_port);

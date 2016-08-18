@@ -40,7 +40,11 @@ void NullspaceController::updateHook() {
     in_jacobianInv_flow = in_jacobianInv_port.read(in_jacobianInv_var);
 
     out_torques_var.torques.setZero();
+
+    //Eq. 13
     out_torques_var.torques = (identityDOFsizeDOFsize - in_jacobian_var.transpose() * in_jacobianInv_var);
+
+    //Eq. 17
     out_torques_var.torques *= (gainP * (in_desiredAngles_var.angles - in_robotstatus_var.angles) - gainD * in_robotstatus_var.velocities );
     out_torques_port.write(out_torques_var);
 }

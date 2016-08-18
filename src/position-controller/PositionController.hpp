@@ -34,23 +34,13 @@ public:
 
 private:
     // Declare input ports and their datatypes
-    // position
-    RTT::InputPort<Eigen::VectorXf> in_desiredPos_port;
-    RTT::InputPort<Eigen::VectorXf> in_desiredPosVelocity_port;
-    RTT::InputPort<Eigen::VectorXf> in_desiredPosAcceleration_port;
+    RTT::InputPort<Eigen::VectorXf> in_desiredTaskSpacePosition_port;
+    RTT::InputPort<Eigen::VectorXf> in_desiredTaskSpaceVelocity_port;
+    RTT::InputPort<Eigen::VectorXf> in_desiredTaskSpaceAcceleration_port;
 
-    RTT::InputPort<Eigen::VectorXf> in_currentPos_port;
-    RTT::InputPort<Eigen::VectorXf> in_currentPosVelocity_port;
+    RTT::InputPort<Eigen::VectorXf> in_currentTaskSpacePosition_port;
+    RTT::InputPort<Eigen::VectorXf> in_currentTaskSpaceVelocity_port;
     RTT::InputPort<rstrt::kinematics::JointVelocities> in_currentJntVelocity_port;
-
-    // orientation
-    RTT::InputPort<Eigen::VectorXf> in_desiredOrt_port;
-    RTT::InputPort<Eigen::VectorXf> in_desiredOrtVelocity_port;
-    RTT::InputPort<Eigen::VectorXf> in_desiredOrtAcceleration_port;
-
-    RTT::InputPort<Eigen::VectorXf> in_currentOrt_port;
-    RTT::InputPort<Eigen::VectorXf> in_currentOrtVelocity_port;
-
 
     RTT::InputPort<Eigen::MatrixXf> in_jacobian_port;
     RTT::InputPort<Eigen::MatrixXf> in_jacobianDot_port;
@@ -64,21 +54,13 @@ private:
     RTT::OutputPort<rstrt::dynamics::JointTorques> out_torques_port;
 
     // Data flow:
-    RTT::FlowStatus in_desiredPos_flow;
-    RTT::FlowStatus in_desiredPosVelocity_flow;
-    RTT::FlowStatus in_desiredPosAcceleration_flow;
+    RTT::FlowStatus in_desiredTaskSpacePosition_flow;
+    RTT::FlowStatus in_desiredTaskSpaceVelocity_flow;
+    RTT::FlowStatus in_desiredTaskSpaceAcceleration_flow;
 
-    RTT::FlowStatus in_currentPos_flow;
-    RTT::FlowStatus in_currentPosVelocity_flow;
+    RTT::FlowStatus in_currentTaskSpacePosition_flow;
+    RTT::FlowStatus in_currentTaskSpaceVelocity_flow;
     RTT::FlowStatus in_currentJntVelocity_flow;
-
-    RTT::FlowStatus in_desiredOrt_flow;
-    RTT::FlowStatus in_desiredOrtVelocity_flow;
-    RTT::FlowStatus in_desiredOrtAcceleration_flow;
-
-    RTT::FlowStatus in_currentOrt_flow;
-    RTT::FlowStatus in_currentOrtVelocity_flow;
-
 
     RTT::FlowStatus in_jacobian_flow;
     RTT::FlowStatus in_jacobianDot_flow;
@@ -88,23 +70,14 @@ private:
     RTT::FlowStatus in_P_flow;
     RTT::FlowStatus in_constraintC_flow;
 
-
     // variables
-    Eigen::VectorXf in_desiredPos_var;
-    Eigen::VectorXf in_desiredPosVelocity_var;
-    Eigen::VectorXf in_desiredPosAcceleration_var;
+    Eigen::VectorXf in_desiredTaskSpacePosition_var;
+    Eigen::VectorXf in_desiredTaskSpaceVelocity_var;
+    Eigen::VectorXf in_desiredTaskSpaceAcceleration_var;
 
-    Eigen::VectorXf in_currentPos_var;
-    Eigen::VectorXf in_currentPosVelocity_var;
+    Eigen::VectorXf in_currentTaskSpacePosition_var;
+    Eigen::VectorXf in_currentTaskSpaceVelocity_var;
     rstrt::kinematics::JointVelocities in_currentJntVelocity_var;
-
-    Eigen::VectorXf in_desiredOrt_var;
-    Eigen::VectorXf in_desiredOrtVelocity_var;
-    Eigen::VectorXf in_desiredOrtAcceleration_var;
-
-    Eigen::VectorXf in_currentOrt_var;
-    Eigen::VectorXf in_currentOrtVelocity_var;
-
 
     Eigen::MatrixXf in_jacobian_var;
     Eigen::MatrixXf in_jacobianDot_var;
@@ -117,13 +90,10 @@ private:
     rstrt::dynamics::JointTorques out_torques_var;
 
     unsigned int DOFsize;
-    float gainP_position, gainD_position, gainP_orientation, gainD_orientation;
+    bool receiveTranslationOnly;
+    unsigned int TaskSpaceDimension;
+    float gainP, gainD;
     bool portsArePrepared;
-
-    // other variables
-    Eigen::VectorXf ref_PosAcceleration;
-    Eigen::VectorXf ref_OrtAcceleration;
-
     Eigen::VectorXf ref_Acceleration, constraintForce;
 
 
