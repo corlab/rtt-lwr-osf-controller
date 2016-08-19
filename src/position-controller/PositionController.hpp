@@ -13,6 +13,7 @@
 //#include <rst-rt/robot/JointState.hpp>
 #include <rst-rt/dynamics/JointTorques.hpp>
 //#include <rst-rt/kinematics/JointAngles.hpp>
+ #include <rst-rt/robot/JointState.hpp>
 #include <rst-rt/kinematics/JointVelocities.hpp>
 #include <rst-rt/geometry/Rotation.hpp>
 #include <rst-rt/geometry/Translation.hpp>
@@ -40,7 +41,7 @@ private:
 
     RTT::InputPort<Eigen::VectorXf> in_currentTaskSpacePosition_port;
     RTT::InputPort<Eigen::VectorXf> in_currentTaskSpaceVelocity_port;
-    RTT::InputPort<rstrt::kinematics::JointVelocities> in_currentJntVelocity_port;
+    RTT::InputPort<rstrt::robot::JointState> in_robotstatus_port;
 
     RTT::InputPort<Eigen::MatrixXf> in_jacobian_port;
     RTT::InputPort<Eigen::MatrixXf> in_jacobianDot_port;
@@ -60,7 +61,7 @@ private:
 
     RTT::FlowStatus in_currentTaskSpacePosition_flow;
     RTT::FlowStatus in_currentTaskSpaceVelocity_flow;
-    RTT::FlowStatus in_currentJntVelocity_flow;
+    RTT::FlowStatus in_robotstatus_flow;
 
     RTT::FlowStatus in_jacobian_flow;
     RTT::FlowStatus in_jacobianDot_flow;
@@ -77,7 +78,7 @@ private:
 
     Eigen::VectorXf in_currentTaskSpacePosition_var;
     Eigen::VectorXf in_currentTaskSpaceVelocity_var;
-    rstrt::kinematics::JointVelocities in_currentJntVelocity_var;
+    rstrt::robot::JointState in_robotstatus_var;
 
     Eigen::MatrixXf in_jacobian_var;
     Eigen::MatrixXf in_jacobianDot_var;

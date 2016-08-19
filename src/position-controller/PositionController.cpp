@@ -41,7 +41,7 @@ void PositionController::updateHook() {
 
     in_currentTaskSpacePosition_flow = in_currentTaskSpacePosition_port.read(in_currentTaskSpacePosition_var);
     in_currentTaskSpaceVelocity_flow = in_currentTaskSpaceVelocity_port.read(in_currentTaskSpaceVelocity_var);
-    in_currentJntVelocity_flow = in_currentJntVelocity_port.read(in_currentJntVelocity_var);
+    in_robotstatus_flow = in_robotstatus_port.read(in_robotstatus_var);
 
 
     in_jacobian_flow = in_jacobian_port.read(in_jacobian_var);
@@ -57,7 +57,7 @@ void PositionController::updateHook() {
 
     //Start Khatib projected endeffector motion controller
     constraintForce = in_constraintLambda_var * ref_Acceleration;
-    constraintForce += in_constraintLambda_var * ( in_jacobian_var * in_constraintM_var.inverse() * in_P_var * in_h_var - (in_jacobianDot_var + in_jacobian_var * in_constraintM_var.inverse() * in_constraintC_var ) * in_currentJntVelocity_var.velocities);
+    constraintForce += in_constraintLambda_var * ( in_jacobian_var * in_constraintM_var.inverse() * in_P_var * in_h_var - (in_jacobianDot_var + in_jacobian_var * in_constraintM_var.inverse() * in_constraintC_var ) * in_robotstatus_var.velocities);
 
     out_torques_var.torques.setZero();
     out_torques_var.torques = in_jacobian_var.transpose() * constraintForce;
@@ -87,7 +87,7 @@ void PositionController::preparePorts(){
 
         ports()->removePort("in_currentTaskSpacePosition_port");  //4
         ports()->removePort("in_currentTaskSpaceVelocity_port");  //5
-        ports()->removePort("in_currentJntVelocity_port");  //6
+        ports()->removePort("in_robotstatus_port");  //6
 
         ports()->removePort("in_jacobian_port");    //12
         ports()->removePort("in_jacobianDot_port");     //13
@@ -133,11 +133,11 @@ void PositionController::preparePorts(){
     ports()->addPort(in_currentTaskSpaceVelocity_port);
     in_currentTaskSpaceVelocity_flow = RTT::NoData;
     //6
-    in_currentJntVelocity_var = rstrt::kinematics::JointVelocities(DOFsize);
-    in_currentJntVelocity_port.setName("in_currentJntVelocity_port");
-    in_currentJntVelocity_port.doc("Input port for reading the joint velocity");
-    ports()->addPort(in_currentJntVelocity_port);
-    in_currentJntVelocity_flow = RTT::NoData;
+    in_robotstatus_var = rstrt::robot::JointState(DOFsize);
+    in_robotstatus_port.setName("in_robotstatus_port");
+    in_robotstatus_port.doc("Input port for reading the joint velocity");
+    ports()->addPort(in_robotstatus_port);
+    in_robotstatus_flow = RTT::NoData;
     //12
     in_jacobian_var = Eigen::MatrixXf(TaskSpaceDimension,DOFsize);
     in_jacobian_port.setName("in_jacobian_port");
