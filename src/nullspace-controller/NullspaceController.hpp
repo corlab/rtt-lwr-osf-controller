@@ -28,6 +28,7 @@ public:
     void cleanupHook();
 
     void setDOFsize(unsigned int DOFsize);
+    bool setDesiredAngles(rstrt::kinematics::JointAngles desiredAngles);
     void preparePorts();
 
 private:

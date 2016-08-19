@@ -11,6 +11,7 @@
 NullspaceController::NullspaceController(std::string const & name) : RTT::TaskContext(name) {
     //prepare operations
     addOperation("setDOFsize", &NullspaceController::setDOFsize, this).doc("set DOF size");
+    addOperation("setDesiredAngles", &NullspaceController::setDesiredAngles, this).doc("set DOF size");
 
     //other stuff
     gainP = 1;
@@ -69,6 +70,16 @@ void NullspaceController::setDOFsize(unsigned int DOFsize){
     this->identityDOFsizeDOFsize = Eigen::MatrixXf(DOFsize,DOFsize);
     this->current_desiredAngles = rstrt::kinematics::JointAngles(DOFsize);
     this->preparePorts();
+}
+
+bool NullspaceController::setDesiredAngles(rstrt::kinematics::JointAngles desiredAngles) {
+    if(current_desiredAngles.angles.size() == DOFsize){
+        this->current_desiredAngles.angles = desiredAngles.angles;
+        return true;
+    }
+    else{
+        return false;
+    }
 }
 
 void NullspaceController::preparePorts(){
