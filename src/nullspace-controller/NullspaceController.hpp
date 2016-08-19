@@ -55,6 +55,8 @@ private:
     Eigen::MatrixXf identityDOFsizeDOFsize;
     rstrt::kinematics::JointAngles current_desiredAngles;
     unsigned int DOFsize;
+    bool receiveTranslationOnly;
+    unsigned int TaskSpaceDimension;
     float gainP, gainD;
     bool portsArePrepared;
 };

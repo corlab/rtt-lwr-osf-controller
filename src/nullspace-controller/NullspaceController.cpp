@@ -15,6 +15,13 @@ NullspaceController::NullspaceController(std::string const & name) : RTT::TaskCo
     //other stuff
     gainP = 1;
     gainD = 0;
+    receiveTranslationOnly = true;
+    if(receiveTranslationOnly){
+        TaskSpaceDimension = 3;
+    }
+    else{
+        TaskSpaceDimension = 6;
+    }
     portsArePrepared = false;
 }
 
@@ -86,13 +93,13 @@ void NullspaceController::preparePorts(){
     ports()->addPort(in_desiredAngles_port);
     in_desiredAngles_flow = RTT::NoData;
 
-    in_jacobian_var = Eigen::MatrixXf(6,DOFsize);
+    in_jacobian_var = Eigen::MatrixXf(TaskSpaceDimension,DOFsize);
     in_jacobian_port.setName("in_jacobian_port");
     in_jacobian_port.doc("Input port for reading jacobian values");
     ports()->addPort(in_jacobian_port);
     in_jacobian_flow = RTT::NoData;
 
-    in_jacobianInv_var = Eigen::MatrixXf(DOFsize,6);
+    in_jacobianInv_var = Eigen::MatrixXf(DOFsize,TaskSpaceDimension);
     in_jacobianInv_port.setName("in_jacobianInv_port");
     in_jacobianInv_port.doc("Input port for reading jacobian inverse values");
     ports()->addPort(in_jacobianInv_port);
