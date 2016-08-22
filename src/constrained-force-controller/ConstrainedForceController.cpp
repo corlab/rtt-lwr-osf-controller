@@ -13,6 +13,8 @@ ConstrainedForceController::ConstrainedForceController(std::string const & name)
 	//prepare operations
 	addOperation("setDOFsize", &ConstrainedForceController::setDOFsize, this).doc(
 			"set DOF size");
+    addOperation("setLambda", &ConstrainedForceController::setLambda, this).doc(
+            "set lambda");
 
 	receiveTranslationOnly = true;
 	if (receiveTranslationOnly) {
@@ -20,6 +22,7 @@ ConstrainedForceController::ConstrainedForceController(std::string const & name)
 	} else {
 		TaskSpaceDimension = 6;
 	}
+    current_lambda = Eigen::VectorXf::Zero(TaskSpaceDimension);
 	portsArePrepared = false;
 }
 
@@ -28,13 +31,49 @@ bool ConstrainedForceController::configureHook() {
 }
 
 bool ConstrainedForceController::startHook() {
+    if (!in_robotstatus_port.connected()) {
+        RTT::log(RTT::Info) << "in_robotstatus_port not connected" << RTT::endlog();
+        return false;
+    }
+    if (!in_jacobian_c_port.connected()) {
+        RTT::log(RTT::Info) << "in_jacobian_c_port not connected" << RTT::endlog();
+        return false;
+    }
+    if (!in_inertia_port.connected()) {
+        RTT::log(RTT::Info) << "in_inertia_port not connected" << RTT::endlog();
+        return false;
+    }
+    if (!in_inertia_c_port.connected()) {
+        RTT::log(RTT::Info) << "in_inertia_c_port not connected" << RTT::endlog();
+        return false;
+    }
+    if (!in_p_port.connected()) {
+        RTT::log(RTT::Info) << "in_p_port not connected" << RTT::endlog();
+        return false;
+    }
+    if (!in_h_port.connected()) {
+        RTT::log(RTT::Info) << "in_h_port not connected" << RTT::endlog();
+        return false;
+    }
+    if (!in_Cc_port.connected()) {
+        RTT::log(RTT::Info) << "in_Cc_port not connected" << RTT::endlog();
+        return false;
+    }
+    if (!out_torques_port.connected()) {
+        RTT::log(RTT::Info) << "out_torques_port not connected" << RTT::endlog();
+        return false;
+    }
+    //TODO add more
 	return true;
 }
 
 void ConstrainedForceController::updateHook() {
-	//update desired angles only when new weight-vector is received
+    //update desired lambda only when new lambda-vector is received
 	if (in_lambda_des_port.connected()) {
 		in_lambda_des_flow = in_lambda_des_port.read(in_lambda_des_var);
+        if (in_lambda_des_flow == RTT::NewData){
+            current_lambda = in_lambda_des_var;
+        }
 	}
 
 	in_robotstatus_flow = in_robotstatus_port.read(in_robotstatus_var);
@@ -59,7 +98,7 @@ void ConstrainedForceController::updateHook() {
 					* ((in_p_var * in_robotstatus_var.torques)
 							- (in_p_var * in_h_var)
 							+ (in_Cc_var * in_robotstatus_var.velocities)))
-			+ (in_jacobian_c_var.transpose() * in_lambda_des_var);
+            + (in_jacobian_c_var.transpose() * current_lambda);
 
 	out_torques_port.write(out_torques_var);
 }
@@ -75,6 +114,11 @@ void ConstrainedForceController::setDOFsize(unsigned int DOFsize) {
 	assert(DOFsize > 0);
 	this->DOFsize = DOFsize;
 	this->preparePorts();
+}
+
+void ConstrainedForceController::setLambda(Eigen::VectorXf new_lambda) {
+    assert(new_lambda.size() == TaskSpaceDimension);
+    this->current_lambda = new_lambda;
 }
 
 void ConstrainedForceController::preparePorts() {
@@ -96,14 +140,14 @@ void ConstrainedForceController::preparePorts() {
 	ports()->addPort(in_robotstatus_port);
 	in_robotstatus_flow = RTT::NoData;
 
-	in_lambda_des_var = Eigen::VectorXf(DOFsize);
+    in_lambda_des_var = Eigen::VectorXf(TaskSpaceDimension);
 	in_lambda_des_port.setName("in_lambda_des_port");
 	in_lambda_des_port.doc("Input port for reading desired lambdas");
 	ports()->addPort(in_lambda_des_port);
 	in_lambda_des_flow = RTT::NoData;
 
 	in_jacobian_c_var = Eigen::MatrixXf(TaskSpaceDimension, DOFsize);
-	in_jacobian_c_port.setName("in_jacobian_port");
+    in_jacobian_c_port.setName("in_jacobian_c_port");
 	in_jacobian_c_port.doc("Input port for reading jacobian_c values");
 	ports()->addPort(in_jacobian_c_port);
 	in_jacobian_c_flow = RTT::NoData;
@@ -120,7 +164,7 @@ void ConstrainedForceController::preparePorts() {
 	ports()->addPort(in_inertia_c_port);
 	in_inertia_c_flow = RTT::NoData;
 
-	in_p_port = Eigen::MatrixXf(DOFsize, DOFsize);
+    in_p_var = Eigen::MatrixXf(DOFsize, DOFsize);
 	in_p_port.setName("in_p_port");
 	in_p_port.doc("Input port for reading p values");
 	ports()->addPort(in_p_port);

@@ -79,7 +79,7 @@ bool TrajectoryGenerator::startHook() {
 void TrajectoryGenerator::updateHook() {
     current_time = this->getSimulationTime();
     time_diff = this->current_time - this->start_time;
-    time_diff = 0.0; //use this for reaching to a constant pose only
+    //time_diff = 0.0; //use this for reaching to a constant pose only
 
     if(sendTranslationOnly){
         this->getPositionTranslation(time_diff, out_desiredTaskSpacePosition_var);

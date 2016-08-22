@@ -36,10 +36,10 @@ bool TorqueSuperimposer::startHook() {
         RTT::log(RTT::Info) << "in_torquesB_port not connected" << RTT::endlog();
         return false;
     }
-//    if (!in_torquesC_port.connected()) {
-//        RTT::log(RTT::Info) << "in_torquesC_port not connected" << RTT::endlog();
-//        return false;
-//    }
+    if (!in_torquesC_port.connected()) {
+        RTT::log(RTT::Info) << "in_torquesC_port not connected" << RTT::endlog();
+        return false;
+    }
     if (!out_torques_port.connected()) {
         RTT::log(RTT::Info) << "out_torques_port not connected" << RTT::endlog();
         return false;
@@ -61,23 +61,23 @@ void TorqueSuperimposer::updateHook() {
     in_torquesB_flow = in_torquesB_port.read(in_torquesB_var);
     in_torquesC_flow = in_torquesC_port.read(in_torquesC_var);
 
-//    if (in_torquesA_flow == RTT::NoData || in_torquesB_flow == RTT::NoData || in_torquesC_flow == RTT::NoData || in_projection_flow == RTT::NoData){
+    if (in_torquesA_flow == RTT::NoData || in_torquesB_flow == RTT::NoData || in_torquesC_flow == RTT::NoData || in_projection_flow == RTT::NoData){
+        return;
+    }
+
+    out_torques_var.torques.setZero();
+    out_torques_var.torques += current_weights.weights(0) * in_projection_var * in_torquesA_var.torques;
+    out_torques_var.torques += current_weights.weights(1) * in_projection_var * in_torquesB_var.torques;
+    out_torques_var.torques += current_weights.weights(2) * (identityDOFsizeDOFsize - in_projection_var) * in_torquesC_var.torques;
+
+
+//    if (in_torquesA_flow == RTT::NoData || in_torquesB_flow == RTT::NoData){
 //        return;
 //    }
 
 //    out_torques_var.torques.setZero();
 //    out_torques_var.torques += current_weights.weights(0) * in_projection_var * in_torquesA_var.torques;
 //    out_torques_var.torques += current_weights.weights(1) * in_projection_var * in_torquesB_var.torques;
-//    out_torques_var.torques += current_weights.weights(2) * (identityDOFsizeDOFsize - in_projection_var) * in_torquesC_var.torques;
-
-
-    if (in_torquesA_flow == RTT::NoData || in_torquesB_flow == RTT::NoData){
-        return;
-    }
-
-    out_torques_var.torques.setZero();
-    out_torques_var.torques += current_weights.weights(0) * in_torquesA_var.torques;
-    out_torques_var.torques += current_weights.weights(1) * in_torquesB_var.torques;
 
 
     out_torques_port.write(out_torques_var);

@@ -65,7 +65,7 @@ void NullspaceController::updateHook() {
     in_jacobian_flow = in_jacobian_port.read(in_jacobian_var);
     in_jacobianInv_flow = in_jacobianInv_port.read(in_jacobianInv_var);
 
-    if (in_jacobian_flow == RTT::NoData || in_jacobianInv_flow == RTT::NoData){
+    if (in_robotstatus_flow == RTT::NoData || in_jacobian_flow == RTT::NoData || in_jacobianInv_flow == RTT::NoData){
         return;
     }
     assert(in_jacobian_var.rows() == TaskSpaceDimension);
@@ -76,11 +76,10 @@ void NullspaceController::updateHook() {
 
     out_torques_var.torques.setZero();
 
-    //Eq. 13
-    out_torques_var.torques = (identityDOFsizeDOFsize - in_jacobian_var.transpose() * in_jacobianInv_var);
+    //Eq. 13 and Eq. 17
+    //out_torques_var.torques = (gainP * (current_desiredAngles.angles - in_robotstatus_var.angles) - gainD * in_robotstatus_var.velocities );
+    out_torques_var.torques = (identityDOFsizeDOFsize - in_jacobian_var.transpose() * in_jacobianInv_var) * (gainP * (current_desiredAngles.angles - in_robotstatus_var.angles) - gainD * in_robotstatus_var.velocities );
 
-    //Eq. 17
-    out_torques_var.torques *= (gainP * (current_desiredAngles.angles - in_robotstatus_var.angles) - gainD * in_robotstatus_var.velocities );
     out_torques_port.write(out_torques_var);
 }
 

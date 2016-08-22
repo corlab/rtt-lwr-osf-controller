@@ -28,6 +28,7 @@ public:
 	void cleanupHook();
 
 	void setDOFsize(unsigned int DOFsize);
+    void setLambda(Eigen::VectorXf new_lambda);
 	void preparePorts();
 
 private:
@@ -63,6 +64,7 @@ private:
 	Eigen::MatrixXf in_p_var;
 	Eigen::VectorXf in_h_var;
 	Eigen::MatrixXf in_Cc_var;
+    Eigen::VectorXf current_lambda;
 
 	rstrt::dynamics::JointTorques out_torques_var;
 
