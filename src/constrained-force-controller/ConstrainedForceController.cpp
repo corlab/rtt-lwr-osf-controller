@@ -15,6 +15,7 @@ ConstrainedForceController::ConstrainedForceController(std::string const & name)
 			"set DOF size");
     addOperation("setLambda", &ConstrainedForceController::setLambda, this).doc(
             "set lambda");
+    addOperation("displayStatus", &ConstrainedForceController::displayStatus, this).doc("print status");
 
 	receiveTranslationOnly = true;
 	if (receiveTranslationOnly) {
@@ -191,6 +192,17 @@ void ConstrainedForceController::preparePorts() {
 	ports()->addPort(out_torques_port);
 
 	portsArePrepared = true;
+}
+
+void ConstrainedForceController::displayStatus(){
+    RTT::log(RTT::Info) << "in_lambda_des_var angles \n" << in_lambda_des_var << RTT::endlog();
+    RTT::log(RTT::Info) << "in_jacobian_c_var \n" << in_jacobian_c_var << RTT::endlog();
+    RTT::log(RTT::Info) << "in_inertia_var \n" << in_inertia_var << RTT::endlog();
+    RTT::log(RTT::Info) << "in_inertia_c_var \n" << in_inertia_c_var << RTT::endlog();
+    RTT::log(RTT::Info) << "in_p_var \n" << in_p_var << RTT::endlog();
+    RTT::log(RTT::Info) << "in_h_var \n" << in_h_var << RTT::endlog();
+    RTT::log(RTT::Info) << "in_Cc_var \n" << in_Cc_var << RTT::endlog();
+    RTT::log(RTT::Info) << "out_torques_var \n" << out_torques_var.torques << RTT::endlog();
 }
 
 //this macro should appear only once per library
