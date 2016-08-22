@@ -11,6 +11,8 @@
 PositionController::PositionController(std::string const & name) : RTT::TaskContext(name) {
     //prepare operations
     addOperation("setDOFsize", &PositionController::setDOFsize, this).doc("set DOF size");
+    addOperation("setGains", &PositionController::setGains, this).doc("set gains");
+    addOperation("displayStatus", &PositionController::displayStatus, this).doc("print status");
 
     //other stuff
     gainP = 100;
@@ -84,6 +86,13 @@ void PositionController::setDOFsize(unsigned int DOFsize){
     ref_Acceleration = Eigen::VectorXf::Zero(TaskSpaceDimension);
     constraintForce = Eigen::VectorXf::Zero(TaskSpaceDimension);
     this->preparePorts();
+}
+
+void PositionController::setGains(float kp, float kd){
+    assert(kp>=0);
+    assert(kd>=0);
+    gainP = kp;
+    gainD = kd;
 }
 
 void PositionController::preparePorts(){
@@ -199,6 +208,23 @@ void PositionController::preparePorts(){
     portsArePrepared = true;
 }
 
+void PositionController::displayStatus(){
+    RTT::log(RTT::Info) << "in_desiredTaskSpacePosition_var \n" << in_desiredTaskSpacePosition_var << RTT::endlog();
+    RTT::log(RTT::Info) << "in_desiredTaskSpaceVelocity_var \n" << in_desiredTaskSpaceVelocity_var << RTT::endlog();
+    RTT::log(RTT::Info) << "in_desiredTaskSpaceAcceleration_var \n" << in_desiredTaskSpaceAcceleration_var << RTT::endlog();
+
+    RTT::log(RTT::Info) << "in_currentTaskSpacePosition_var \n" << in_currentTaskSpacePosition_var << RTT::endlog();
+    RTT::log(RTT::Info) << "in_currentTaskSpaceVelocity_var \n" << in_currentTaskSpaceVelocity_var << RTT::endlog();
+
+    RTT::log(RTT::Info) << "in_jacobian_var \n" << in_jacobian_var << RTT::endlog();
+    RTT::log(RTT::Info) << "in_jacobianDot_var \n" << in_jacobianDot_var << RTT::endlog();
+    RTT::log(RTT::Info) << "in_constraintLambda_var \n" << in_constraintLambda_var << RTT::endlog();
+    RTT::log(RTT::Info) << "in_h_var \n" << in_h_var << RTT::endlog();
+    RTT::log(RTT::Info) << "in_constraintM_var \n" << in_constraintM_var << RTT::endlog();
+    RTT::log(RTT::Info) << "in_P_var \n" << in_P_var << RTT::endlog();
+    RTT::log(RTT::Info) << "in_constraintC_var \n" << in_constraintC_var << RTT::endlog();
+    RTT::log(RTT::Info) << "out_torques_var \n" << out_torques_var.torques << RTT::endlog();
+}
 
 //this macro should appear only once per library
 //ORO_CREATE_COMPONENT_LIBRARY()

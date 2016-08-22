@@ -28,8 +28,10 @@ public:
     void cleanupHook();
 
     void setDOFsize(unsigned int DOFsize);
+    void setGains(float kp, float kd);
     bool setDesiredAngles(rstrt::kinematics::JointAngles desiredAngles);
     void preparePorts();
+    void displayStatus();
 
 private:
     // Declare input ports and their datatypes

@@ -29,6 +29,7 @@ public:
     void setDOFsize(unsigned int DOFsize);
     bool setInitialWeights(rstrt::robot::Weights & initialWeights);
     void preparePorts();
+    void displayStatus();
 
 private:
     // Declare input ports and their datatypes

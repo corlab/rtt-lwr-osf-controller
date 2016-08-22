@@ -11,7 +11,9 @@
 NullspaceController::NullspaceController(std::string const & name) : RTT::TaskContext(name) {
     //prepare operations
     addOperation("setDOFsize", &NullspaceController::setDOFsize, this).doc("set DOF size");
-    addOperation("setDesiredAngles", &NullspaceController::setDesiredAngles, this).doc("set DOF size");
+    addOperation("setGains", &NullspaceController::setGains, this).doc("set gains");
+    addOperation("setDesiredAngles", &NullspaceController::setDesiredAngles, this).doc("set desired angles");
+    addOperation("displayStatus", &NullspaceController::displayStatus, this).doc("print status");
 
     //other stuff
     gainP = 1;
@@ -80,6 +82,13 @@ void NullspaceController::setDOFsize(unsigned int DOFsize){
     this->preparePorts();
 }
 
+void NullspaceController::setGains(float kp, float kd){
+    assert(kp>=0);
+    assert(kd>=0);
+    gainP = kp;
+    gainD = kd;
+}
+
 bool NullspaceController::setDesiredAngles(rstrt::kinematics::JointAngles desiredAngles) {
     if(current_desiredAngles.angles.size() == DOFsize){
         this->current_desiredAngles.angles = desiredAngles.angles;
@@ -135,6 +144,12 @@ void NullspaceController::preparePorts(){
     portsArePrepared = true;
 }
 
+void NullspaceController::displayStatus(){
+    RTT::log(RTT::Info) << "in_desiredAngles_var \n" << in_desiredAngles_var << RTT::endlog();
+    RTT::log(RTT::Info) << "in_jacobian_var \n" << in_jacobian_var << RTT::endlog();
+    RTT::log(RTT::Info) << "in_jacobianInv_var \n" << in_jacobianInv_var << RTT::endlog();
+    RTT::log(RTT::Info) << "out_torques_var \n" << out_torques_var.torques << RTT::endlog();
+}
 
 //this macro should appear only once per library
 //ORO_CREATE_COMPONENT_LIBRARY()

@@ -13,6 +13,7 @@ TorqueSuperimposer::TorqueSuperimposer(std::string const & name) : RTT::TaskCont
     addOperation("setDOFsize", &TorqueSuperimposer::setDOFsize, this).doc("set DOF size");
     addOperation("setInitialWeights", &TorqueSuperimposer::setInitialWeights, this).doc("set initial weights");
     addOperation("preparePorts", &TorqueSuperimposer::preparePorts, this).doc("prepare ports");
+    addOperation("displayStatus", &TorqueSuperimposer::displayStatus, this).doc("print status");
 
     //other stuff
     portsArePrepared = false;
@@ -40,10 +41,25 @@ void TorqueSuperimposer::updateHook() {
     in_torquesB_flow = in_torquesB_port.read(in_torquesB_var);
     in_torquesC_flow = in_torquesC_port.read(in_torquesC_var);
 
+//    if (in_torquesA_flow == RTT::NoData || in_torquesB_flow == RTT::NoData || in_torquesC_flow == RTT::NoData || in_projection_flow == RTT::NoData){
+//        return;
+//    }
+
+//    out_torques_var.torques.setZero();
+//    out_torques_var.torques += current_weights.weights(0) * in_projection_var * in_torquesA_var.torques;
+//    out_torques_var.torques += current_weights.weights(1) * in_projection_var * in_torquesB_var.torques;
+//    out_torques_var.torques += current_weights.weights(2) * (identityDOFsizeDOFsize - in_projection_var) * in_torquesC_var.torques;
+
+
+    if (in_torquesA_flow == RTT::NoData || in_torquesB_flow == RTT::NoData){
+        return;
+    }
+
     out_torques_var.torques.setZero();
-    out_torques_var.torques += current_weights.weights(0) * in_projection_var * in_torquesA_var.torques;
-    out_torques_var.torques += current_weights.weights(1) * in_projection_var * in_torquesB_var.torques;
-    out_torques_var.torques += current_weights.weights(2) * (identityDOFsizeDOFsize - in_projection_var) * in_torquesC_var.torques;
+    out_torques_var.torques += current_weights.weights(0) * in_torquesA_var.torques;
+    out_torques_var.torques += current_weights.weights(1) * in_torquesB_var.torques;
+
+
     out_torques_port.write(out_torques_var);
 }
 
@@ -125,6 +141,15 @@ void TorqueSuperimposer::preparePorts(){
     portsArePrepared = true;
 }
 
+void TorqueSuperimposer::displayStatus(){
+    RTT::log(RTT::Info) << "in_weights_var \n" << in_weights_var.weights << RTT::endlog();
+    RTT::log(RTT::Info) << "in_projection_var \n" << in_projection_var << RTT::endlog();
+    RTT::log(RTT::Info) << "in_torquesA_var \n" << in_torquesA_var.torques << RTT::endlog();
+    RTT::log(RTT::Info) << "in_torquesB_var \n" << in_torquesB_var.torques << RTT::endlog();
+    RTT::log(RTT::Info) << "in_torquesC_var \n" << in_torquesC_var.torques << RTT::endlog();
+    RTT::log(RTT::Info) << "out_torques_var \n" << out_torques_var.torques << RTT::endlog();
+    RTT::log(RTT::Info) << "current_weights \n" << current_weights.weights << RTT::endlog();
+}
 
 //this macro should appear only once per library
 ORO_CREATE_COMPONENT_LIBRARY()

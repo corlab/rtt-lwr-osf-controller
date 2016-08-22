@@ -31,7 +31,9 @@ public:
     void cleanupHook();
 
     void setDOFsize(unsigned int DOFsize);
+    void setGains(float kp, float kd);
     void preparePorts();
+    void displayStatus();
 
 private:
     // Declare input ports and their datatypes
