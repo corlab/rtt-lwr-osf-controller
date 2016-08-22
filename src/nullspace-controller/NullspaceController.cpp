@@ -72,7 +72,7 @@ void NullspaceController::updateHook() {
     assert(in_jacobian_var.cols() == DOFsize);
     assert(in_jacobianInv_var.rows() == TaskSpaceDimension);
     assert(in_jacobianInv_var.cols() == DOFsize);
-    assert(current_desiredAngles.size() == DOFsize);
+    assert(current_desiredAngles.angles.size() == DOFsize);
 
     out_torques_var.torques.setZero();
 
