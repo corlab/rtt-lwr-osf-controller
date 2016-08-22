@@ -32,6 +32,21 @@ bool PositionController::configureHook() {
 }
 
 bool PositionController::startHook() {
+    if (!in_robotstatus_port.connected()) {
+        RTT::log(RTT::Info) << "in_robotstatus_port not connected" << RTT::endlog();
+        return false;
+    }
+    if (!in_desiredTaskSpacePosition_port.connected()) {
+        RTT::log(RTT::Info) << "in_desiredTaskSpacePosition_port not connected" << RTT::endlog();
+        return false;
+    }
+
+    //TODO add other ports here
+
+    if (!out_torques_port.connected()) {
+        RTT::log(RTT::Info) << "out_torques_port not connected" << RTT::endlog();
+        return false;
+    }
     return true;
 }
 

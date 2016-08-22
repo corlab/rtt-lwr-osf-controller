@@ -33,6 +33,22 @@ bool NullspaceController::configureHook() {
 }
 
 bool NullspaceController::startHook() {
+    if (!in_robotstatus_port.connected()) {
+        RTT::log(RTT::Info) << "in_robotstatus_port not connected" << RTT::endlog();
+        return false;
+    }
+    if (!in_jacobian_port.connected()) {
+        RTT::log(RTT::Info) << "in_jacobian_port not connected" << RTT::endlog();
+        return false;
+    }
+    if (!in_jacobianInv_port.connected()) {
+        RTT::log(RTT::Info) << "in_jacobianInv_port not connected" << RTT::endlog();
+        return false;
+    }
+    if (!out_torques_port.connected()) {
+        RTT::log(RTT::Info) << "out_torques_port not connected" << RTT::endlog();
+        return false;
+    }
     return true;
 }
 
@@ -41,7 +57,7 @@ void NullspaceController::updateHook() {
     if (in_desiredAngles_port.connected()) {
         in_desiredAngles_flow = in_desiredAngles_port.read(in_desiredAngles_var);
         if (in_desiredAngles_flow == RTT::NewData){
-            current_desiredAngles = in_desiredAngles_var;
+            current_desiredAngles.angles = in_desiredAngles_var.angles;
         }
     }
 
@@ -49,13 +65,14 @@ void NullspaceController::updateHook() {
     in_jacobian_flow = in_jacobian_port.read(in_jacobian_var);
     in_jacobianInv_flow = in_jacobianInv_port.read(in_jacobianInv_var);
 
-    if (in_desiredAngles_flow == RTT::NoData || in_jacobian_flow == RTT::NoData || in_jacobianInv_flow == RTT::NoData){
+    if (in_jacobian_flow == RTT::NoData || in_jacobianInv_flow == RTT::NoData){
         return;
     }
     assert(in_jacobian_var.rows() == TaskSpaceDimension);
     assert(in_jacobian_var.cols() == DOFsize);
     assert(in_jacobianInv_var.rows() == TaskSpaceDimension);
     assert(in_jacobianInv_var.cols() == DOFsize);
+    assert(current_desiredAngles.size() == DOFsize);
 
     out_torques_var.torques.setZero();
 
@@ -63,7 +80,7 @@ void NullspaceController::updateHook() {
     out_torques_var.torques = (identityDOFsizeDOFsize - in_jacobian_var.transpose() * in_jacobianInv_var);
 
     //Eq. 17
-    out_torques_var.torques *= (gainP * (in_desiredAngles_var.angles - in_robotstatus_var.angles) - gainD * in_robotstatus_var.velocities );
+    out_torques_var.torques *= (gainP * (current_desiredAngles.angles - in_robotstatus_var.angles) - gainD * in_robotstatus_var.velocities );
     out_torques_port.write(out_torques_var);
 }
 
@@ -149,6 +166,10 @@ void NullspaceController::displayStatus(){
     RTT::log(RTT::Info) << "in_jacobian_var \n" << in_jacobian_var << RTT::endlog();
     RTT::log(RTT::Info) << "in_jacobianInv_var \n" << in_jacobianInv_var << RTT::endlog();
     RTT::log(RTT::Info) << "out_torques_var \n" << out_torques_var.torques << RTT::endlog();
+
+    RTT::log(RTT::Info) << "deviation angles \n" << in_desiredAngles_var.angles - in_robotstatus_var.angles << RTT::endlog();
+    RTT::log(RTT::Info) << "gainP \n" << gainP << RTT::endlog();
+    RTT::log(RTT::Info) << "gainD \n" << gainD << RTT::endlog();
 }
 
 //this macro should appear only once per library

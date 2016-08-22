@@ -24,6 +24,26 @@ bool TorqueSuperimposer::configureHook() {
 }
 
 bool TorqueSuperimposer::startHook() {
+    if (!in_projection_port.connected()) {
+        RTT::log(RTT::Info) << "in_projection_port not connected" << RTT::endlog();
+        return false;
+    }
+    if (!in_torquesA_port.connected()) {
+        RTT::log(RTT::Info) << "in_torquesA_port not connected" << RTT::endlog();
+        return false;
+    }
+    if (!in_torquesB_port.connected()) {
+        RTT::log(RTT::Info) << "in_torquesB_port not connected" << RTT::endlog();
+        return false;
+    }
+//    if (!in_torquesC_port.connected()) {
+//        RTT::log(RTT::Info) << "in_torquesC_port not connected" << RTT::endlog();
+//        return false;
+//    }
+    if (!out_torques_port.connected()) {
+        RTT::log(RTT::Info) << "out_torques_port not connected" << RTT::endlog();
+        return false;
+    }
     return true;
 }
 
