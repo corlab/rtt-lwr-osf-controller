@@ -52,6 +52,13 @@ void PositionController::updateHook() {
     in_P_flow = in_P_port.read(in_P_var);
     in_constraintC_flow = in_constraintC_port.read(in_constraintC_var);
 
+    if (in_desiredTaskSpacePosition_flow == RTT::NoData || in_desiredTaskSpaceVelocity_flow == RTT::NoData || in_desiredTaskSpaceAcceleration_flow == RTT::NoData ||
+        in_currentTaskSpacePosition_flow == RTT::NoData || in_currentTaskSpaceVelocity_flow == RTT::NoData || in_robotstatus_flow == RTT::NoData ||
+        in_jacobian_flow == RTT::NoData || in_jacobianDot_flow == RTT::NoData || in_constraintLambda_flow == RTT::NoData ||
+        in_h_flow == RTT::NoData || in_constraintM_flow == RTT::NoData || in_P_flow == RTT::NoData || in_constraintC_flow == RTT::NoData){
+        return;
+    }
+
     // reference acceleration for cartesian task
     ref_Acceleration = in_desiredTaskSpaceAcceleration_var + gainP * (in_desiredTaskSpacePosition_var - in_currentTaskSpacePosition_var) + gainD * (in_desiredTaskSpaceVelocity_var - in_currentTaskSpaceVelocity_var);
 

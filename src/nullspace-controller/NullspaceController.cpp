@@ -47,6 +47,14 @@ void NullspaceController::updateHook() {
     in_jacobian_flow = in_jacobian_port.read(in_jacobian_var);
     in_jacobianInv_flow = in_jacobianInv_port.read(in_jacobianInv_var);
 
+    if (in_desiredAngles_flow == RTT::NoData || in_jacobian_flow == RTT::NoData || in_jacobianInv_flow == RTT::NoData){
+        return;
+    }
+    assert(in_jacobian_var.rows() == TaskSpaceDimension);
+    assert(in_jacobian_var.cols() == DOFsize);
+    assert(in_jacobianInv_var.rows() == TaskSpaceDimension);
+    assert(in_jacobianInv_var.cols() == DOFsize);
+
     out_torques_var.torques.setZero();
 
     //Eq. 13
@@ -110,9 +118,9 @@ void NullspaceController::preparePorts(){
     ports()->addPort(in_jacobian_port);
     in_jacobian_flow = RTT::NoData;
 
-    in_jacobianInv_var = Eigen::MatrixXf(DOFsize,TaskSpaceDimension);
+    in_jacobianInv_var = Eigen::MatrixXf(TaskSpaceDimension,DOFsize);
     in_jacobianInv_port.setName("in_jacobianInv_port");
-    in_jacobianInv_port.doc("Input port for reading jacobian inverse values");
+    in_jacobianInv_port.doc("Input port for reading jacobian special inverse values");
     ports()->addPort(in_jacobianInv_port);
     in_jacobianInv_flow = RTT::NoData;
 
