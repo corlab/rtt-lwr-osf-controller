@@ -48,6 +48,7 @@ TrajectoryGenerator::TrajectoryGenerator(std::string const & name) : RTT::TaskCo
     // board parallel to floor
     double boardAngle_deg = 0;
     double boardAngle_rad = boardAngle_deg / 360 * 2 * M_PI;
+    BoardRot.fill(0);
     BoardRot(0,0) = cos(boardAngle_rad);
     BoardRot(0,2) = sin(boardAngle_rad);
     BoardRot(1,1) = 1;
