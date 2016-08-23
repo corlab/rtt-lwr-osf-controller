@@ -32,9 +32,11 @@ public:
 
     void setDOFsize(unsigned int DOFsize);
     void setGains(float kp, float kd);
+    void setGainsOrientation(float kp, float kd);
     void preparePorts();
     void displayStatus();
     void toEulerAngles(Eigen::Vector3f& res, Eigen::Quaternionf& quat) const;
+    void toQuaternion(Eigen::Vector3f& rpy, Eigen::Quaternionf& res) const;
 
 private:
     // Declare input ports and their datatypes
@@ -95,14 +97,14 @@ private:
 
     Eigen::AngleAxisf rotx, roty, rotz;
     Eigen::Quaternionf quat_target,quat_current,quat_diff;
-    Eigen::Vector3f euler_diff, euler_diff_vel;
+    Eigen::Vector3f euler_diff, euler_diff_vel, euler_temp;
 
     Eigen::VectorXf error_pos, error_vel;
 
     unsigned int DOFsize;
     bool receiveTranslationOnly;
     unsigned int TaskSpaceDimension;
-    float gainP, gainD;
+    float gainP, gainD, gainP_o, gainD_o;
     bool portsArePrepared;
     Eigen::VectorXf ref_Acceleration, constraintForce;
 

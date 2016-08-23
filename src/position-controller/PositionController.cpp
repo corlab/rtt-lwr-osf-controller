@@ -14,11 +14,14 @@ PositionController::PositionController(std::string const & name) :
 			"set DOF size");
 	addOperation("setGains", &PositionController::setGains, this).doc(
 			"set gains");
+	addOperation("setGainsOrientation",
+			&PositionController::setGainsOrientation, this).doc(
+			"set gains orientation");
 	addOperation("displayStatus", &PositionController::displayStatus, this).doc(
 			"print status");
 
 	addOperation("preparePorts", &PositionController::preparePorts, this).doc(
-				"preparePorts");
+			"preparePorts");
 
 	addOperation("setTranslationOnly", &PositionController::setTranslationOnly,
 			this, RTT::ClientThread).doc(
@@ -105,30 +108,38 @@ void PositionController::updateHook() {
 		return;
 	}
 	if (!receiveTranslationOnly) {
-		rotx.angle() = in_desiredTaskSpacePosition_var(3);
-		roty.angle() = in_desiredTaskSpacePosition_var(4);
-		rotz.angle() = in_desiredTaskSpacePosition_var(5);
-		quat_target = rotx * roty * rotz;
+//		rotx.angle() = in_desiredTaskSpacePosition_var(3);
+//		roty.angle() = in_desiredTaskSpacePosition_var(4);
+//		rotz.angle() = in_desiredTaskSpacePosition_var(5);
+//		quat_target = rotx * roty * rotz;
+		euler_temp = in_desiredTaskSpacePosition_var.block<3, 1>(3, 0, 3, 1);
+		toQuaternion(euler_temp, quat_target);
 		quat_target.normalize();
-		rotx.angle() = in_currentTaskSpacePosition_var(3);
-		roty.angle() = in_currentTaskSpacePosition_var(4);
-		rotz.angle() = in_currentTaskSpacePosition_var(5);
-		quat_current = rotx * roty * rotz;
+//		rotx.angle() = in_currentTaskSpacePosition_var(3);
+//		roty.angle() = in_currentTaskSpacePosition_var(4);
+//		rotz.angle() = in_currentTaskSpacePosition_var(5);
+//		quat_current = rotx * roty * rotz;
+		euler_temp = in_currentTaskSpacePosition_var.block<3, 1>(3, 0, 3, 1);
+		toQuaternion(euler_temp, quat_current);
 		quat_current.normalize();
 		quat_diff = quat_target * (quat_current.inverse());
 		quat_diff.normalize();
 
 		toEulerAngles(euler_diff, quat_diff);
 
-		rotx.angle() = in_desiredTaskSpaceVelocity_var(3);
-		roty.angle() = in_desiredTaskSpaceVelocity_var(4);
-		rotz.angle() = in_desiredTaskSpaceVelocity_var(5);
-		quat_target = rotx * roty * rotz;
+//		rotx.angle() = in_desiredTaskSpaceVelocity_var(3);
+//		roty.angle() = in_desiredTaskSpaceVelocity_var(4);
+//		rotz.angle() = in_desiredTaskSpaceVelocity_var(5);
+//		quat_target = rotx * roty * rotz;
+		euler_temp = in_desiredTaskSpaceVelocity_var.block<3, 1>(3, 0, 3, 1);
+		toQuaternion(euler_temp, quat_target);
 		quat_target.normalize();
-		rotx.angle() = in_currentTaskSpaceVelocity_var(3);
-		roty.angle() = in_currentTaskSpaceVelocity_var(4);
-		rotz.angle() = in_currentTaskSpaceVelocity_var(5);
-		quat_current = rotx * roty * rotz;
+//		rotx.angle() = in_currentTaskSpaceVelocity_var(3);
+//		roty.angle() = in_currentTaskSpaceVelocity_var(4);
+//		rotz.angle() = in_currentTaskSpaceVelocity_var(5);
+//		quat_current = rotx * roty * rotz;
+		euler_temp = in_currentTaskSpaceVelocity_var.block<3, 1>(3, 0, 3, 1);
+				toQuaternion(euler_temp, quat_current);
 		quat_current.normalize();
 		quat_diff = quat_target * (quat_current.inverse());
 		quat_diff.normalize();
@@ -137,18 +148,23 @@ void PositionController::updateHook() {
 
 	}
 
-	error_pos = (in_desiredTaskSpacePosition_var
-			- in_currentTaskSpacePosition_var);
-	error_vel = (in_desiredTaskSpaceVelocity_var
-			- in_currentTaskSpaceVelocity_var);
+	error_pos =
+			gainP
+					* (in_desiredTaskSpacePosition_var
+							- in_currentTaskSpacePosition_var);
+	error_vel =
+			gainD
+					* (in_desiredTaskSpaceVelocity_var
+							- in_currentTaskSpaceVelocity_var);
 	if (!receiveTranslationOnly) {
-		error_pos.block<3, 1>(0, 0, 3, 1) = euler_diff;
-		error_vel.block<3, 1>(0, 0, 3, 1) = euler_diff_vel;
+		error_pos.block<3, 1>(3, 0, 3, 1) = gainP_o * euler_diff;
+		error_vel.block<3, 1>(3, 0, 3, 1) = gainD_o * euler_diff_vel;
+		std::cout << error_pos << "\n----------------------------\n";
 	}
 
 	// reference acceleration for cartesian task
-	ref_Acceleration = in_desiredTaskSpaceAcceleration_var + gainP * (error_pos)
-			+ gainD * (error_vel);
+	ref_Acceleration = in_desiredTaskSpaceAcceleration_var + (error_pos)
+			+ (error_vel);
 
 	//Start Khatib projected endeffector motion controller
 	constraintForce = in_constraintLambda_var * ref_Acceleration;
@@ -190,6 +206,13 @@ void PositionController::setGains(float kp, float kd) {
 	assert(kd >= 0);
 	gainP = kp;
 	gainD = kd;
+}
+
+void PositionController::setGainsOrientation(float kp, float kd) {
+	assert(kp >= 0);
+	assert(kd >= 0);
+	gainP_o = kp;
+	gainD_o = kd;
 }
 
 void PositionController::preparePorts() {
@@ -358,6 +381,17 @@ void PositionController::toEulerAngles(Eigen::Vector3f& res,
 	res(1) = asin(2 * ((quat.w() * quat.y()) - (quat.z() * quat.x())));
 	res(2) = atan2(2 * ((quat.w() * quat.z()) + (quat.x() * quat.y())),
 			1 - (2 * ((quat.y() * quat.y()) + (quat.z() * quat.z()))));
+}
+void PositionController::toQuaternion(Eigen::Vector3f& rpy,
+		Eigen::Quaternionf& res) const {
+	res.x() = (sin(rpy.x() / 2) * cos(rpy.y() / 2) * cos(rpy.z() / 2))
+			- (cos(rpy.x() / 2) * sin(rpy.y() / 2) * sin(rpy.z() / 2));
+	res.y() = (cos(rpy.x() / 2) * sin(rpy.y() / 2) * cos(rpy.z() / 2))
+			+ (sin(rpy.x() / 2) * cos(rpy.y() / 2) * sin(rpy.z() / 2));
+	res.z() = (cos(rpy.x() / 2) * cos(rpy.y() / 2) * sin(rpy.z() / 2))
+			- (sin(rpy.x() / 2) * sin(rpy.y() / 2) * cos(rpy.z() / 2));
+	res.w() = (cos(rpy.x() / 2) * cos(rpy.y() / 2) * cos(rpy.z() / 2))
+			+ (sin(rpy.x() / 2) * sin(rpy.y() / 2) * sin(rpy.z() / 2));
 }
 
 //this macro should appear only once per library
