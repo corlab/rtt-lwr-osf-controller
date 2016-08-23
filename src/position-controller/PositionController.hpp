@@ -34,6 +34,7 @@ public:
     void setGains(float kp, float kd);
     void preparePorts();
     void displayStatus();
+    void toEulerAngles(Eigen::Vector3f& res, Eigen::Quaternionf& quat) const;
 
 private:
     // Declare input ports and their datatypes
@@ -91,6 +92,12 @@ private:
     Eigen::MatrixXf in_constraintC_var;
 
     rstrt::dynamics::JointTorques out_torques_var;
+
+    Eigen::AngleAxisf rotx, roty, rotz;
+    Eigen::Quaternionf quat_target,quat_current,quat_diff;
+    Eigen::Vector3f euler_diff, euler_diff_vel;
+
+    Eigen::VectorXf error_pos, error_vel;
 
     unsigned int DOFsize;
     bool receiveTranslationOnly;
