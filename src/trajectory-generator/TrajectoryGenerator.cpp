@@ -12,6 +12,8 @@ TrajectoryGenerator::TrajectoryGenerator(std::string const & name) : RTT::TaskCo
     //prepare operations
     addOperation("preparePorts", &TrajectoryGenerator::preparePorts, this).doc("prepare ports");
 
+    addOperation("setTranslationOnly", &TrajectoryGenerator::setTranslationOnly, this, RTT::ClientThread).doc("set translation only, or use also orientation");
+
     //other stuff
     portsArePrepared = false;
 
@@ -23,6 +25,7 @@ TrajectoryGenerator::TrajectoryGenerator(std::string const & name) : RTT::TaskCo
     TipOrientation = Eigen::VectorXf(3);
     tmp = Eigen::VectorXf(3);
 
+    setTranslationOnly(true);
 
     // board 45 degrees opposite side
 //    double boardAngle_deg = 45;
