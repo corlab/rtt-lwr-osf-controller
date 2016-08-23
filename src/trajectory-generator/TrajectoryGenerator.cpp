@@ -18,7 +18,7 @@ TrajectoryGenerator::TrajectoryGenerator(std::string const & name) : RTT::TaskCo
     portsArePrepared = false;
 
     start_time = 0.0;
-    _timescale = 0.2;
+    _timescale = 0.6;
 
     BoardRot = Eigen::MatrixXf(3,3);
     BoardTransl = Eigen::VectorXf(3);
@@ -55,8 +55,8 @@ TrajectoryGenerator::TrajectoryGenerator(std::string const & name) : RTT::TaskCo
     BoardRot(2,2) = cos(boardAngle_rad);
 
     BoardTransl(0) = -0.55;
-    BoardTransl(1) = 0.0;
-    BoardTransl(2) = 0.5;
+    BoardTransl(1) = 0;
+    BoardTransl(2) = 1;
 
     TipOrientation(0) = 0;
     TipOrientation(1) = -M_PI - boardAngle_rad;

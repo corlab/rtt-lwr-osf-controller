@@ -4,26 +4,27 @@
  * Description:
  */
 
-#include "PositionController.hpp"
+#include "PositionNormalController.hpp"
+
 #include <rtt/Component.hpp> // needed for the macro at the end of this file
 
-PositionController::PositionController(std::string const & name) :
+PositionNormalController::PositionNormalController(std::string const & name) :
 		RTT::TaskContext(name), receiveTranslationOnly(true) {
 	//prepare operations
-	addOperation("setDOFsize", &PositionController::setDOFsize, this).doc(
+	addOperation("setDOFsize", &PositionNormalController::setDOFsize, this).doc(
 			"set DOF size");
-	addOperation("setGains", &PositionController::setGains, this).doc(
+	addOperation("setGains", &PositionNormalController::setGains, this).doc(
 			"set gains");
 	addOperation("setGainsOrientation",
-			&PositionController::setGainsOrientation, this).doc(
+			&PositionNormalController::setGainsOrientation, this).doc(
 			"set gains orientation");
-	addOperation("displayStatus", &PositionController::displayStatus, this).doc(
+	addOperation("displayStatus", &PositionNormalController::displayStatus, this).doc(
 			"print status");
 
-	addOperation("preparePorts", &PositionController::preparePorts, this).doc(
+	addOperation("preparePorts", &PositionNormalController::preparePorts, this).doc(
 			"preparePorts");
 
-	addOperation("setTranslationOnly", &PositionController::setTranslationOnly,
+	addOperation("setTranslationOnly", &PositionNormalController::setTranslationOnly,
 			this, RTT::ClientThread).doc(
 			"set translation only, or use also orientation");
 
@@ -43,11 +44,11 @@ PositionController::PositionController(std::string const & name) :
 //	rotz.axis() = Eigen::Vector3f::UnitZ();
 }
 
-bool PositionController::configureHook() {
+bool PositionNormalController::configureHook() {
 	return true;
 }
 
-bool PositionController::startHook() {
+bool PositionNormalController::startHook() {
 	if (!in_robotstatus_port.connected()) {
 		RTT::log(RTT::Info) << "in_robotstatus_port not connected"
 				<< RTT::endlog();
@@ -69,7 +70,7 @@ bool PositionController::startHook() {
 	return true;
 }
 
-void PositionController::updateHook() {
+void PositionNormalController::updateHook() {
 	// cartesian task
 	in_desiredTaskSpacePosition_flow = in_desiredTaskSpacePosition_port.read(
 			in_desiredTaskSpacePosition_var);
@@ -171,33 +172,41 @@ void PositionController::updateHook() {
 			+ (error_vel);
 
 	//Start Khatib projected endeffector motion controller
-	constraintForce = in_constraintLambda_var * ref_Acceleration;
-	constraintForce += in_constraintLambda_var
-			* (in_jacobian_var * in_constraintM_var.inverse() * in_P_var
-					* in_h_var
-					- (in_jacobianDot_var
-							+ in_jacobian_var * in_constraintM_var.inverse()
-									* in_constraintC_var)
-							* in_robotstatus_var.velocities);
-
+//	constraintForce = in_constraintLambda_var * ref_Acceleration;
+//	constraintForce += in_constraintLambda_var
+//			* (in_jacobian_var * in_constraintM_var.inverse() * in_P_var
+//					* in_h_var
+//					- (in_jacobianDot_var
+//							+ in_jacobian_var * in_constraintM_var.inverse()
+//									* in_constraintC_var)
+//							* in_robotstatus_var.velocities);
+//	jac_bar
+//							* ((jac.data * M.data.inverse() * C.data)
+//									- (jacd.data * qdot.data))
+//					+ jac_bar * jac.data * M.data.inverse() * G.data;
+//	RTT::log(RTT::Info)<<in_jacobian_var<<"\n---------------\n";
+	constraintForce = ((in_jacobian_var*in_constraintM_var.inverse()*in_jacobian_var.transpose()).inverse())*ref_Acceleration+
+			((in_jacobian_var*in_constraintM_var.inverse()*in_jacobian_var.transpose()).inverse())*(-in_jacobianDot_var*in_robotstatus_var.velocities)+
+			(((in_jacobian_var*in_constraintM_var.inverse()*in_jacobian_var.transpose()).inverse())*in_jacobian_var*in_constraintM_var.inverse()*in_h_var);
+//	constraintForce = error_pos + error_vel;
 	out_torques_var.torques.setZero();
 	out_torques_var.torques = in_jacobian_var.transpose() * constraintForce;
 	out_torques_port.write(out_torques_var);
 }
 
-void PositionController::stopHook() {
+void PositionNormalController::stopHook() {
 }
 
-void PositionController::cleanupHook() {
+void PositionNormalController::cleanupHook() {
 	portsArePrepared = false;
 }
 
-void PositionController::setDOFsize(unsigned int DOFsize) {
+void PositionNormalController::setDOFsize(unsigned int DOFsize) {
 	assert(DOFsize > 0);
 	this->DOFsize = DOFsize;
 }
 
-void PositionController::setTranslationOnly(const bool translationOnly) {
+void PositionNormalController::setTranslationOnly(const bool translationOnly) {
 	receiveTranslationOnly = translationOnly;
 	if (receiveTranslationOnly) {
 		TaskSpaceDimension = 3;
@@ -205,21 +214,21 @@ void PositionController::setTranslationOnly(const bool translationOnly) {
 		TaskSpaceDimension = 6;
 	}
 }
-void PositionController::setGains(float kp, float kd) {
+void PositionNormalController::setGains(float kp, float kd) {
 	assert(kp >= 0);
 	assert(kd >= 0);
 	gainP = kp;
 	gainD = kd;
 }
 
-void PositionController::setGainsOrientation(float kp, float kd) {
+void PositionNormalController::setGainsOrientation(float kp, float kd) {
 	assert(kp >= 0);
 	assert(kd >= 0);
 	gainP_o = kp;
 	gainD_o = kd;
 }
 
-void PositionController::preparePorts() {
+void PositionNormalController::preparePorts() {
 	if (portsArePrepared) {
 		ports()->removePort("in_desiredTaskSpacePosition_port");  //1
 		ports()->removePort("in_desiredTaskSpaceVelocity_port");  //2
@@ -349,7 +358,7 @@ void PositionController::preparePorts() {
 	portsArePrepared = true;
 }
 
-void PositionController::displayStatus() {
+void PositionNormalController::displayStatus() {
 	RTT::log(RTT::Info) << "in_desiredTaskSpacePosition_var \n"
 			<< in_desiredTaskSpacePosition_var << RTT::endlog();
 	RTT::log(RTT::Info) << "in_desiredTaskSpaceVelocity_var \n"
@@ -378,7 +387,7 @@ void PositionController::displayStatus() {
 			<< RTT::endlog();
 }
 
-void PositionController::toEulerAngles(Eigen::Vector3f& res,
+void PositionNormalController::toEulerAngles(Eigen::Vector3f& res,
 		Eigen::Quaternionf& quat) const {
 	res(0) = atan2(2 * ((quat.w() * quat.x()) + (quat.y() * quat.z())),
 			1 - (2 * ((quat.x() * quat.x()) + (quat.y() * quat.y()))));
@@ -386,7 +395,7 @@ void PositionController::toEulerAngles(Eigen::Vector3f& res,
 	res(2) = atan2(2 * ((quat.w() * quat.z()) + (quat.x() * quat.y())),
 			1 - (2 * ((quat.y() * quat.y()) + (quat.z() * quat.z()))));
 }
-void PositionController::toQuaternion(Eigen::Vector3f& rpy,
+void PositionNormalController::toQuaternion(Eigen::Vector3f& rpy,
 		Eigen::Quaternionf& res) const {
 	res.x() = (sin(rpy.x() / 2) * cos(rpy.y() / 2) * cos(rpy.z() / 2))
 			- (cos(rpy.x() / 2) * sin(rpy.y() / 2) * sin(rpy.z() / 2));
@@ -402,5 +411,5 @@ void PositionController::toQuaternion(Eigen::Vector3f& rpy,
 //ORO_CREATE_COMPONENT_LIBRARY()
 
 // This macro, as you can see, creates the component. Every component should have this!
-ORO_LIST_COMPONENT_TYPE(PositionController)
+ORO_LIST_COMPONENT_TYPE(PositionNormalController)
 

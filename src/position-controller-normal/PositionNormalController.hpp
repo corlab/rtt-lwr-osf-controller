@@ -18,9 +18,9 @@
 #include <rst-rt/geometry/Rotation.hpp>
 #include <rst-rt/geometry/Translation.hpp>
 
-class PositionController: public RTT::TaskContext {
+class PositionNormalController: public RTT::TaskContext {
 public:
-	PositionController(std::string const & name);
+    PositionNormalController(std::string const & name);
 
     // RTT::TaskContext methods that are needed for any standard component and
     // should be implemented by user
