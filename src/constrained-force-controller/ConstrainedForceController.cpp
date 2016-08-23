@@ -123,7 +123,6 @@ void ConstrainedForceController::cleanupHook() {
 void ConstrainedForceController::setDOFsize(unsigned int DOFsize) {
 	assert(DOFsize > 0);
 	this->DOFsize = DOFsize;
-	this->preparePorts();
 }
 
 void ConstrainedForceController::setLambda(Eigen::VectorXf new_lambda) {

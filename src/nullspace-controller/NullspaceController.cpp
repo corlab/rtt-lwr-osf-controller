@@ -109,7 +109,6 @@ void NullspaceController::setDOFsize(unsigned int DOFsize){
     this->identityDOFsizeDOFsize.setIdentity();
     this->current_desiredAngles = rstrt::kinematics::JointAngles(DOFsize);
     this->desired_torques = rstrt::dynamics::JointTorques(DOFsize);
-    this->preparePorts();
 }
 
 void NullspaceController::setGains(float kp, float kd){
