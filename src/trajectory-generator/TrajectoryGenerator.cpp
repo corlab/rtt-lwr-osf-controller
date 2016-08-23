@@ -91,7 +91,7 @@ void TrajectoryGenerator::updateHook() {
         this->getVelocity(time_diff, out_desiredTaskSpaceVelocity_var);
         this->getAcceleration(time_diff, out_desiredTaskSpaceAcceleration_var);
     }
-    std::cout<<out_desiredTaskSpacePosition_var<<"\n";
+    //std::cout<<out_desiredTaskSpacePosition_var<<"\n";
 
     out_desiredTaskSpacePosition_port.write(out_desiredTaskSpacePosition_var);
     out_desiredTaskSpaceVelocity_port.write(out_desiredTaskSpaceVelocity_var);
