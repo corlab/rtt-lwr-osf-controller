@@ -29,6 +29,9 @@ NullspaceController::NullspaceController(std::string const & name) : RTT::TaskCo
 }
 
 bool NullspaceController::configureHook() {
+    std::string dynmodel = "idyn";
+//    kdl_component_ptr = getPeer(dynmodel);
+//    computeGravity = kdl_component_ptr->getOperation("computeGravity");
     return true;
 }
 
@@ -77,8 +80,9 @@ void NullspaceController::updateHook() {
     out_torques_var.torques.setZero();
 
     //Eq. 13 and Eq. 17
-    //out_torques_var.torques = (gainP * (current_desiredAngles.angles - in_robotstatus_var.angles) - gainD * in_robotstatus_var.velocities );
-    out_torques_var.torques = (identityDOFsizeDOFsize - in_jacobian_var.transpose() * in_jacobianInv_var) * (gainP * (current_desiredAngles.angles - in_robotstatus_var.angles) - gainD * in_robotstatus_var.velocities );
+    this->computeDesiredAnglesTorques(desired_torques);
+    //this->computeMinimumEffortTorques(in_robotstatus_var, desired_torques);
+    out_torques_var.torques = (identityDOFsizeDOFsize - in_jacobian_var.transpose() * in_jacobianInv_var) * desired_torques.torques;
 
     out_torques_port.write(out_torques_var);
 }
@@ -96,6 +100,7 @@ void NullspaceController::setDOFsize(unsigned int DOFsize){
     this->identityDOFsizeDOFsize = Eigen::MatrixXf(DOFsize,DOFsize);
     this->identityDOFsizeDOFsize.setIdentity();
     this->current_desiredAngles = rstrt::kinematics::JointAngles(DOFsize);
+    this->desired_torques = rstrt::dynamics::JointTorques(DOFsize);
     this->preparePorts();
 }
 
@@ -113,6 +118,67 @@ bool NullspaceController::setDesiredAngles(rstrt::kinematics::JointAngles desire
     }
     else{
         return false;
+    }
+}
+
+void NullspaceController::computeDesiredAnglesTorques(rstrt::dynamics::JointTorques & jointTorques) {
+    jointTorques.torques = gainP * (current_desiredAngles.angles - in_robotstatus_var.angles) - gainD * in_robotstatus_var.velocities;
+}
+
+void NullspaceController::computeMinimumEffortTorques(
+        rstrt::robot::JointState const & jointState,
+        rstrt::dynamics::JointTorques & jointTorques) {
+
+    float effort, effortEPS;
+    Eigen::VectorXf gravitycompensation, gravitycompensationEPS;
+    rstrt::robot::JointState jointStateEPS;
+
+    gravitycompensation = Eigen::VectorXf(DOFsize);
+    gravitycompensationEPS = Eigen::VectorXf(DOFsize);
+    jointStateEPS = rstrt::robot::JointState(DOFsize);
+
+    float controllerGain = 0.1;
+    float epsq = 3.14 / 180.0; // equivalent to 1 degree;
+
+    jointTorques.torques.setZero();
+
+    gravitycompensation.setZero();
+    computeGravity(jointState, gravitycompensation);
+
+    // equation 4 in the paper (without a weighting diagonal matrix)
+    // effort = 1x1 = 1 x numjoints * numjoints x 1
+    effort = float(gravitycompensation.transpose() * gravitycompensation);
+
+    for(unsigned int jointNr=0; jointNr<DOFsize; jointNr++){
+        // blur only one specific joint
+        jointStateEPS.angles = jointState.angles;
+        jointStateEPS.velocities = jointState.velocities;
+        jointStateEPS.torques = jointState.torques;
+        jointStateEPS.angles(jointNr) = jointState.angles(jointNr) + epsq;
+
+        // Gravity compensation with one specific blured joint
+        gravitycompensationEPS.setZero();
+        computeGravity(jointStateEPS, gravitycompensationEPS);
+
+        // calculate effort again
+        // effort = 1x1 = 1 x numjoints * numjoints x 1
+        effortEPS = float(gravitycompensationEPS.transpose() * gravitycompensationEPS);
+
+        // equation 6 in the paper
+        // ->elementwise hardamard product operator in the paper, irrelevant for scalar values...??
+        // there are two formulas given, the second one is better
+        // jointTorques.torques(jointNr) = - 0.5* (effortEPS - effort);
+        jointTorques.torques(jointNr) = - controllerGain * this->sgn(effortEPS - effort) * std::pow(gravitycompensation(jointNr),2);
+    }
+}
+
+int NullspaceController::sgn(float x){
+    if (x>0){
+        return +1;
+    }else if (x<0){
+        return -1;
+    }else{
+        return 0;
     }
 }
 
