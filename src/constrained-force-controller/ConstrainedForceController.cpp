@@ -17,6 +17,9 @@ ConstrainedForceController::ConstrainedForceController(std::string const & name)
             "set lambda");
     addOperation("displayStatus", &ConstrainedForceController::displayStatus, this).doc("print status");
 
+    addOperation("preparePorts", &ConstrainedForceController::preparePorts, this).doc(
+        				"preparePorts");
+
     addOperation("setTranslationOnly", &ConstrainedForceController::setTranslationOnly,
         			this, RTT::ClientThread).doc(
         			"set translation only, or use also orientation");

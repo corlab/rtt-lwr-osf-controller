@@ -17,6 +17,9 @@ PositionController::PositionController(std::string const & name) :
 	addOperation("displayStatus", &PositionController::displayStatus, this).doc(
 			"print status");
 
+	addOperation("preparePorts", &PositionController::preparePorts, this).doc(
+				"preparePorts");
+
 	addOperation("setTranslationOnly", &PositionController::setTranslationOnly,
 			this, RTT::ClientThread).doc(
 			"set translation only, or use also orientation");
