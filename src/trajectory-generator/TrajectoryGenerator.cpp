@@ -8,19 +8,13 @@
 #include <rtt/Component.hpp> // needed for the macro at the end of this file
 
 
-TrajectoryGenerator::TrajectoryGenerator(std::string const & name) : RTT::TaskContext(name) {
+TrajectoryGenerator::TrajectoryGenerator(std::string const & name) : RTT::TaskContext(name), sendTranslationOnly(true) {
     //prepare operations
     addOperation("preparePorts", &TrajectoryGenerator::preparePorts, this).doc("prepare ports");
 
     //other stuff
     portsArePrepared = false;
-    sendTranslationOnly = true;
-    if(sendTranslationOnly){
-        TaskSpaceDimension = 3;
-    }
-    else{
-        TaskSpaceDimension = 6;
-    }
+
     start_time = 0.0;
     _timescale = 0.2;
 
@@ -65,6 +59,16 @@ TrajectoryGenerator::TrajectoryGenerator(std::string const & name) : RTT::TaskCo
     TipOrientation(1) = -M_PI - boardAngle_rad;
     TipOrientation(2) = 0;
     radius = 0.15;
+}
+
+void TrajectoryGenerator::setTranslationOnly(const bool translationOnly) {
+	sendTranslationOnly = translationOnly;
+	if(sendTranslationOnly){
+		TaskSpaceDimension = 3;
+	}
+	else{
+		TaskSpaceDimension = 6;
+	}
 }
 
 bool TrajectoryGenerator::configureHook() {

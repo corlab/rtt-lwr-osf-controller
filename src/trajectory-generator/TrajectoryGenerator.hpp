@@ -30,6 +30,9 @@ public:
     void stopHook();
     void cleanupHook();
 
+    // call before preparePorts()
+	void setTranslationOnly(const bool translationOnly);
+
     void preparePorts();
     double getSimulationTime();
 
