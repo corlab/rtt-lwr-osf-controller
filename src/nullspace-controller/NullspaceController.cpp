@@ -8,7 +8,7 @@
 #include <rtt/Component.hpp> // needed for the macro at the end of this file
 
 
-NullspaceController::NullspaceController(std::string const & name) : RTT::TaskContext(name) {
+NullspaceController::NullspaceController(std::string const & name) : RTT::TaskContext(name), receiveTranslationOnly(true) {
     //prepare operations
     addOperation("setDOFsize", &NullspaceController::setDOFsize, this).doc("set DOF size");
     addOperation("setGains", &NullspaceController::setGains, this).doc("set gains");
@@ -18,14 +18,18 @@ NullspaceController::NullspaceController(std::string const & name) : RTT::TaskCo
     //other stuff
     gainP = 1;
     gainD = 0;
-    receiveTranslationOnly = true;
-    if(receiveTranslationOnly){
-        TaskSpaceDimension = 3;
-    }
-    else{
-        TaskSpaceDimension = 6;
-    }
+    setTranslationOnly(true);
     portsArePrepared = false;
+}
+
+void NullspaceController::setTranslationOnly(const bool translationOnly) {
+	receiveTranslationOnly = translationOnly;
+	if(receiveTranslationOnly){
+		TaskSpaceDimension = 3;
+	}
+	else{
+		TaskSpaceDimension = 6;
+	}
 }
 
 bool NullspaceController::configureHook() {

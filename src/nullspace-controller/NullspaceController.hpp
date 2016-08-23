@@ -72,5 +72,8 @@ private:
     //OperationCaller
     TaskContext* kdl_component_ptr;
     RTT::OperationCaller<void(rstrt::robot::JointState const & , Eigen::VectorXf &)> computeGravity;
+
+    // call right after setDOFSize()
+	void setTranslationOnly(const bool translationOnly);
 };
 
