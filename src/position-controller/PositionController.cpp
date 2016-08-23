@@ -8,23 +8,21 @@
 #include <rtt/Component.hpp> // needed for the macro at the end of this file
 
 
-PositionController::PositionController(std::string const & name) : RTT::TaskContext(name) {
+PositionController::PositionController(std::string const & name) : RTT::TaskContext(name), receiveTranslationOnly(true) {
     //prepare operations
     addOperation("setDOFsize", &PositionController::setDOFsize, this).doc("set DOF size");
     addOperation("setGains", &PositionController::setGains, this).doc("set gains");
     addOperation("displayStatus", &PositionController::displayStatus, this).doc("print status");
 
+    addOperation("setTranslationOnly", &PositionController::setTranslationOnly, this, RTT::ClientThread).doc("set translation only, or use also orientation");
+
     //other stuff
     gainP = 100;
     gainD = 20;
-    receiveTranslationOnly = true;
-    if(receiveTranslationOnly){
-        TaskSpaceDimension = 3;
-    }
-    else{
-        TaskSpaceDimension = 6;
-    }
+
     portsArePrepared = false;
+
+    setTranslationOnly(true);
 }
 
 bool PositionController::configureHook() {
@@ -98,9 +96,16 @@ void PositionController::cleanupHook() {
 void PositionController::setDOFsize(unsigned int DOFsize){
     assert(DOFsize > 0);
     this->DOFsize = DOFsize;
-    ref_Acceleration = Eigen::VectorXf::Zero(TaskSpaceDimension);
-    constraintForce = Eigen::VectorXf::Zero(TaskSpaceDimension);
-    this->preparePorts();
+}
+
+void PositionController::setTranslationOnly(const bool translationOnly) {
+	receiveTranslationOnly = translationOnly;
+	if(receiveTranslationOnly){
+		TaskSpaceDimension = 3;
+	}
+	else{
+		TaskSpaceDimension = 6;
+	}
 }
 
 void PositionController::setGains(float kp, float kd){
@@ -111,6 +116,10 @@ void PositionController::setGains(float kp, float kd){
 }
 
 void PositionController::preparePorts(){
+	ref_Acceleration = Eigen::VectorXf::Zero(TaskSpaceDimension);
+	constraintForce = Eigen::VectorXf::Zero(TaskSpaceDimension);
+
+
     if (portsArePrepared){
         ports()->removePort("in_desiredTaskSpacePosition_port");  //1
         ports()->removePort("in_desiredTaskSpaceVelocity_port");  //2

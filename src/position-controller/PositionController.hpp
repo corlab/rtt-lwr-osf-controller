@@ -99,6 +99,7 @@ private:
     bool portsArePrepared;
     Eigen::VectorXf ref_Acceleration, constraintForce;
 
-
+    // call before preparePorts()
+	void setTranslationOnly(const bool translationOnly);
 };
 
