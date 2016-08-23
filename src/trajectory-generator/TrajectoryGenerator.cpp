@@ -22,7 +22,7 @@ TrajectoryGenerator::TrajectoryGenerator(std::string const & name) : RTT::TaskCo
         TaskSpaceDimension = 6;
     }
     start_time = 0.0;
-    _timescale = 0.6;
+    _timescale = 0.2;
 
     BoardRot = Eigen::MatrixXf(3,3);
     BoardTransl = Eigen::VectorXf(3);
@@ -91,6 +91,7 @@ void TrajectoryGenerator::updateHook() {
         this->getVelocity(time_diff, out_desiredTaskSpaceVelocity_var);
         this->getAcceleration(time_diff, out_desiredTaskSpaceAcceleration_var);
     }
+    std::cout<<out_desiredTaskSpacePosition_var<<"\n";
 
     out_desiredTaskSpacePosition_port.write(out_desiredTaskSpacePosition_var);
     out_desiredTaskSpaceVelocity_port.write(out_desiredTaskSpaceVelocity_var);

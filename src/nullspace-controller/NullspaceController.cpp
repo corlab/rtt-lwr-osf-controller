@@ -94,6 +94,7 @@ void NullspaceController::setDOFsize(unsigned int DOFsize){
     assert(DOFsize > 0);
     this->DOFsize = DOFsize;
     this->identityDOFsizeDOFsize = Eigen::MatrixXf(DOFsize,DOFsize);
+    this->identityDOFsizeDOFsize.setIdentity();
     this->current_desiredAngles = rstrt::kinematics::JointAngles(DOFsize);
     this->preparePorts();
 }

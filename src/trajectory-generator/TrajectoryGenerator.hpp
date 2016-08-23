@@ -8,6 +8,7 @@
 
 #include <rtt/Port.hpp>
 #include <rtt/TaskContext.hpp>
+#include <rtt/os/Timer.hpp>
 #include <string>
 
 //#include <rst-rt/robot/JointState.hpp>
@@ -65,6 +66,7 @@ private:
     bool sendTranslationOnly;
     unsigned int TaskSpaceDimension;
     double radius;
+    RTT::os::TimeService::ticks start_ticks;
     double start_time, current_time, time_diff;
     double _timescale;
     Eigen::MatrixXf BoardRot;

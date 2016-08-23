@@ -96,6 +96,8 @@ void TorqueSuperimposer::setDOFsize(unsigned int DOFsize){
     this->current_weights = rstrt::robot::Weights(3);
     this->current_weights.weights.setOnes();
     this->identityDOFsizeDOFsize = Eigen::MatrixXf(DOFsize,DOFsize);
+    this->identityDOFsizeDOFsize.setIdentity();
+    //std::cout<<identityDOFsizeDOFsize<<"----------------------------------------------\n-------------------------------------------------\n----------------------------------------------------\n";
     this->preparePorts();
 }
 
