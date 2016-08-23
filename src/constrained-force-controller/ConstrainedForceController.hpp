@@ -30,6 +30,7 @@ public:
 	void setDOFsize(unsigned int DOFsize);
     void setLambda(Eigen::VectorXf new_lambda);
 	void preparePorts();
+    void displayStatus();
 
 private:
 	// Declare input ports and their datatypes
