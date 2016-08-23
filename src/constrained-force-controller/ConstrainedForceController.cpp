@@ -9,7 +9,7 @@
 #include <rtt/Component.hpp> // needed for the macro at the end of this file
 
 ConstrainedForceController::ConstrainedForceController(std::string const & name) :
-		RTT::TaskContext(name) {
+		RTT::TaskContext(name), receiveTranslationOnly(true) {
 	//prepare operations
 	addOperation("setDOFsize", &ConstrainedForceController::setDOFsize, this).doc(
 			"set DOF size");
@@ -17,14 +17,23 @@ ConstrainedForceController::ConstrainedForceController(std::string const & name)
             "set lambda");
     addOperation("displayStatus", &ConstrainedForceController::displayStatus, this).doc("print status");
 
-	receiveTranslationOnly = true;
-	if (receiveTranslationOnly) {
-		TaskSpaceDimension = 3;
-	} else {
-		TaskSpaceDimension = 6;
-	}
+    addOperation("setTranslationOnly", &ConstrainedForceController::setTranslationOnly,
+        			this, RTT::ClientThread).doc(
+        			"set translation only, or use also orientation");
+
+	setTranslationOnly(true);
     current_lambda = Eigen::VectorXf::Zero(TaskSpaceDimension);
 	portsArePrepared = false;
+}
+
+void ConstrainedForceController::setTranslationOnly(const bool translationOnly) {
+	receiveTranslationOnly = translationOnly;
+	if(receiveTranslationOnly){
+		TaskSpaceDimension = 3;
+	}
+	else{
+		TaskSpaceDimension = 6;
+	}
 }
 
 bool ConstrainedForceController::configureHook() {

@@ -73,5 +73,8 @@ private:
 	bool receiveTranslationOnly;
 	unsigned int TaskSpaceDimension;
 	bool portsArePrepared;
+
+	// call right after setDOFSize()
+	void setTranslationOnly(const bool translationOnly);
 };
 

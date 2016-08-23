@@ -15,6 +15,10 @@ NullspaceController::NullspaceController(std::string const & name) : RTT::TaskCo
     addOperation("setDesiredAngles", &NullspaceController::setDesiredAngles, this).doc("set desired angles");
     addOperation("displayStatus", &NullspaceController::displayStatus, this).doc("print status");
 
+    addOperation("setTranslationOnly", &NullspaceController::setTranslationOnly,
+    			this, RTT::ClientThread).doc(
+    			"set translation only, or use also orientation");
+
     //other stuff
     gainP = 1;
     gainD = 0;
