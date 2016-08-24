@@ -145,7 +145,8 @@ void PositionController::updateHook() {
 		quat_diff.normalize();
 
 		toEulerAngles(euler_diff_vel, quat_diff);
-		euler_diff_vel = in_desiredTaskSpaceVelocity_var.block<3, 1>(3, 0, 3, 1)-in_currentTaskSpaceVelocity_var.block<3, 1>(3, 0, 3, 1);
+		//std::cout<<euler_diff<<"\n---------------------------------\n";
+		//euler_diff_vel = in_desiredTaskSpaceVelocity_var.block<3, 1>(3, 0, 3, 1)-in_currentTaskSpaceVelocity_var.block<3, 1>(3, 0, 3, 1);
 
 	}
 

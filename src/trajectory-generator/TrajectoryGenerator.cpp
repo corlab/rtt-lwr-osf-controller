@@ -191,7 +191,7 @@ void TrajectoryGenerator::getAcceleration(double time, Eigen::VectorXf & ret) {
     tmp(1) = radius * (-1)*sin(_timescale * (time-start_time));
     tmp(2) = 0.0;
     tmp = BoardRot * tmp;
-    std::cout<<tmp<<"\n--------------------------------------\n";
+//    std::cout<<tmp<<"\n--------------------------------------\n";
 
     ret(0) = tmp(0);
     ret(1) = tmp(1);
