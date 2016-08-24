@@ -13,6 +13,8 @@ TrajectoryGenerator::TrajectoryGenerator(std::string const & name) : RTT::TaskCo
     addOperation("preparePorts", &TrajectoryGenerator::preparePorts, this).doc("prepare ports");
 
     addOperation("setTranslationOnly", &TrajectoryGenerator::setTranslationOnly, this, RTT::ClientThread).doc("set translation only, or use also orientation");
+    addOperation("setCenter", &TrajectoryGenerator::setCenter,this,RTT::ClientThread);
+    addProperty("radius",radius);
 
     //other stuff
     portsArePrepared = false;
@@ -189,6 +191,7 @@ void TrajectoryGenerator::getAcceleration(double time, Eigen::VectorXf & ret) {
     tmp(1) = radius * (-1)*sin(_timescale * (time-start_time));
     tmp(2) = 0.0;
     tmp = BoardRot * tmp;
+    std::cout<<tmp<<"\n--------------------------------------\n";
 
     ret(0) = tmp(0);
     ret(1) = tmp(1);
@@ -238,6 +241,12 @@ void TrajectoryGenerator::getAccelerationOrientation(double time, Eigen::VectorX
     ret(0) = 0;
     ret(1) = 0;
     ret(2) = 0;
+}
+
+void TrajectoryGenerator::setCenter(double x,double y,double z){
+	BoardTransl(0) = x;
+	BoardTransl(1) = y;
+	BoardTransl(2) = z;
 }
 
 

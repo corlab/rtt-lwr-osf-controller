@@ -48,6 +48,8 @@ public:
     void getVelocityOrientation(double time, Eigen::VectorXf & ret);
     void getAccelerationOrientation(double time, Eigen::VectorXf & ret);
 
+    void setCenter(double x, double y,double z);
+
 private:
     // Declare input ports and their datatypes
 
