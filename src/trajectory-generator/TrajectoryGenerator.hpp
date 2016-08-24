@@ -32,7 +32,7 @@ public:
 
     // call before preparePorts()
 	void setTranslationOnly(const bool translationOnly);
-
+    void setRadius(float r);
     void preparePorts();
     double getSimulationTime();
 
@@ -70,7 +70,7 @@ private:
     bool portsArePrepared;
     bool sendTranslationOnly;
     unsigned int TaskSpaceDimension;
-    double radius;
+    float radius;
     RTT::os::TimeService::ticks start_ticks;
     double start_time, current_time, time_diff;
     double _timescale;
