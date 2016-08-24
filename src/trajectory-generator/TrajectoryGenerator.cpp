@@ -11,8 +11,8 @@
 TrajectoryGenerator::TrajectoryGenerator(std::string const & name) : RTT::TaskContext(name), sendTranslationOnly(true) {
     //prepare operations
     addOperation("preparePorts", &TrajectoryGenerator::preparePorts, this).doc("prepare ports");
-
     addOperation("setTranslationOnly", &TrajectoryGenerator::setTranslationOnly, this, RTT::ClientThread).doc("set translation only, or use also orientation");
+    addOperation("setRadius", &TrajectoryGenerator::setRadius, this, RTT::ClientThread).doc("set radius");
     addOperation("setCenter", &TrajectoryGenerator::setCenter,this,RTT::ClientThread);
     addProperty("radius",radius);
 
@@ -75,6 +75,11 @@ void TrajectoryGenerator::setTranslationOnly(const bool translationOnly) {
 	else{
 		TaskSpaceDimension = 6;
 	}
+}
+
+void TrajectoryGenerator::setRadius(float r) {
+    assert(r >= 0);
+    radius = r;
 }
 
 bool TrajectoryGenerator::configureHook() {
