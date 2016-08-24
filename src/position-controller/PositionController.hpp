@@ -35,8 +35,25 @@ public:
     void setGainsOrientation(float kp, float kd);
     void preparePorts();
     void displayStatus();
-    void toEulerAngles(Eigen::Vector3f& res, Eigen::Quaternionf& quat) const;
-    void toQuaternion(Eigen::Vector3f& rpy, Eigen::Quaternionf& res) const;
+    void toEulerAngles(Eigen::Vector3f& res, Eigen::Quaternionf const & quat) const;
+    void toQuaternion(Eigen::Vector3f const & rpy, Eigen::Quaternionf& res) const;
+
+    void QuaternionProduct(
+            Eigen::Quaternionf const & quat1,
+            Eigen::Quaternionf const & quat2,
+            Eigen::Quaternionf& quatResult);
+    void QuaternionProduct(
+            float const & quaternionV1,
+            Eigen::Vector3f const & quaternionU1,
+            float const & quaternionV2,
+            Eigen::Vector3f const & quaternionU2,
+            float & resultV,
+            Eigen::Vector3f & resultU);
+
+    void ExpEuler2Quaternion(Eigen::Vector3f const & euler, Eigen::Quaternionf & quaternion);
+    void ExpEuler2Quaternion(Eigen::Vector3f const & euler, float & quaternionV, Eigen::Vector3f & quaternionU);
+    void LogQuaternion2Euler(Eigen::Quaternionf const & quaternion, Eigen::Vector3f & euler);
+    void LogQuaternion2Euler(float const & quaternionV, Eigen::Vector3f const & quaternionU, Eigen::Vector3f & euler);
 
 private:
     // Declare input ports and their datatypes
@@ -97,7 +114,7 @@ private:
 
     Eigen::AngleAxisf rotx, roty, rotz;
     Eigen::Quaternionf quat_target,quat_current,quat_diff;
-    Eigen::Vector3f euler_diff, euler_diff_vel, euler_temp,euler_temp2;
+    Eigen::Vector3f euler_diff_pos, euler_diff_vel, euler_temp,euler_temp2;
     Eigen::Matrix3f temp_mat;
     Eigen::VectorXf error_pos, error_vel;
 
