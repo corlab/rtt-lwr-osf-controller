@@ -22,15 +22,16 @@ bool TorqueTransition::configureHook() {
     // intializations and object creations go here. Each component should run this before being able to run
 
     //check conncetion
-    if (!in_torquesA_port.connected() || !in_torquesB_port.connected() || !out_torques_port.connected())
-        return false;
-    else
+
         return true;
 }
 
 bool TorqueTransition::startHook() {
     // this method starts the component
     startTime = this->getSimulationTime();
+    if (!in_torquesA_port.connected() || !in_torquesB_port.connected() || !out_torques_port.connected())
+           return false;
+       else
     return true;
 }
 

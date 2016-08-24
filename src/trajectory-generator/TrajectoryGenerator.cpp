@@ -57,7 +57,7 @@ TrajectoryGenerator::TrajectoryGenerator(std::string const & name) : RTT::TaskCo
 
     BoardTransl(0) = -0.55;
     BoardTransl(1) = 0;
-    BoardTransl(2) = 1;
+    BoardTransl(2) = 0.5;
 
     TipOrientation(0) = 0;
     TipOrientation(1) = -M_PI - boardAngle_rad;

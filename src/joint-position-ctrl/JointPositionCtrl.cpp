@@ -25,14 +25,15 @@ bool JointPositionCtrl::configureHook() {
     // intializations and object creations go here. Each component should run this before being able to run
 
     //check conncetion
-    if (!in_robotstatus_port.connected() || !out_torques_port.connected())
-        return false;
-    else
+
         return true;
 }
 
 bool JointPositionCtrl::startHook() {
     // this method starts the component
+	 if (!in_robotstatus_port.connected() || !out_torques_port.connected())
+	        return false;
+	    else
     return true;
 }
 
