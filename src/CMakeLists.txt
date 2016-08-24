@@ -57,6 +57,10 @@ orocos_component(${CMAKE_PROJECT_NAME}
                                         ${PROJECT_SOURCE_DIR}/constrained-force-controller/ConstrainedForceController.cpp
                                         ${PROJECT_SOURCE_DIR}/trajectory-generator/TrajectoryGenerator.hpp
                                         ${PROJECT_SOURCE_DIR}/trajectory-generator/TrajectoryGenerator.cpp
+                                        ${PROJECT_SOURCE_DIR}/joint-position-ctrl/JointPositionCtrl.hpp
+                                        ${PROJECT_SOURCE_DIR}/joint-position-ctrl/JointPositionCtrl.cpp
+                                        ${PROJECT_SOURCE_DIR}/torque-transition/TorqueTransition.hpp
+                                        ${PROJECT_SOURCE_DIR}/torque-transition/TorqueTransition.cpp
 ) # ...you may add multiple source files
 #
 # You may add multiple orocos_component statements.
