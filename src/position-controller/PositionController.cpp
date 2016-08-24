@@ -36,7 +36,7 @@ PositionController::PositionController(std::string const & name) :
 	rotx = Eigen::AngleAxisf(0, Eigen::Vector3f::UnitX());
 	roty = Eigen::AngleAxisf(0, Eigen::Vector3f::UnitY());
 	rotz = Eigen::AngleAxisf(0, Eigen::Vector3f::UnitZ());
-	euler_diff.setZero();
+    euler_diff_pos.setZero();
 	euler_diff_vel.setZero();
 //	rotx.axis() = Eigen::Vector3f::UnitX();
 //	roty.axis() = Eigen::Vector3f::UnitY();
@@ -108,46 +108,73 @@ void PositionController::updateHook() {
 		return;
 	}
 	if (!receiveTranslationOnly) {
+        if (true) {
+        //position feedback part
 //		rotx.angle() = in_desiredTaskSpacePosition_var(3);
 //		roty.angle() = in_desiredTaskSpacePosition_var(4);
 //		rotz.angle() = in_desiredTaskSpacePosition_var(5);
 //		quat_target = rotx * roty * rotz;
-		euler_temp = in_desiredTaskSpacePosition_var.block<3, 1>(3, 0, 3, 1);
+        euler_temp = in_desiredTaskSpacePosition_var.tail<3>();
 		toQuaternion(euler_temp, quat_target);
 		quat_target.normalize();
 //		rotx.angle() = in_currentTaskSpacePosition_var(3);
 //		roty.angle() = in_currentTaskSpacePosition_var(4);
 //		rotz.angle() = in_currentTaskSpacePosition_var(5);
 //		quat_current = rotx * roty * rotz;
-		euler_temp = in_currentTaskSpacePosition_var.block<3, 1>(3, 0, 3, 1);
+        euler_temp = in_currentTaskSpacePosition_var.tail<3>();
 		toQuaternion(euler_temp, quat_current);
 		quat_current.normalize();
 		quat_diff = quat_target * (quat_current.inverse());
 		quat_diff.normalize();
 
-		toEulerAngles(euler_diff, quat_diff);
+        toEulerAngles(euler_diff_pos, quat_diff);
 
+        //velocity feedback part
 //		rotx.angle() = in_desiredTaskSpaceVelocity_var(3);
 //		roty.angle() = in_desiredTaskSpaceVelocity_var(4);
 //		rotz.angle() = in_desiredTaskSpaceVelocity_var(5);
 //		quat_target = rotx * roty * rotz;
-		euler_temp = in_desiredTaskSpaceVelocity_var.block<3, 1>(3, 0, 3, 1);
+        euler_temp = in_desiredTaskSpaceVelocity_var.tail<3>();
 		toQuaternion(euler_temp, quat_target);
 		quat_target.normalize();
 //		rotx.angle() = in_currentTaskSpaceVelocity_var(3);
 //		roty.angle() = in_currentTaskSpaceVelocity_var(4);
 //		rotz.angle() = in_currentTaskSpaceVelocity_var(5);
 //		quat_current = rotx * roty * rotz;
-		euler_temp = in_currentTaskSpaceVelocity_var.block<3, 1>(3, 0, 3, 1);
+        euler_temp = in_currentTaskSpaceVelocity_var.tail<3>();
 				toQuaternion(euler_temp, quat_current);
 		quat_current.normalize();
 		quat_diff = quat_target * (quat_current.inverse());
 		quat_diff.normalize();
 
 		toEulerAngles(euler_diff_vel, quat_diff);
-		//std::cout<<euler_diff<<"\n---------------------------------\n";
-		//euler_diff_vel = in_desiredTaskSpaceVelocity_var.block<3, 1>(3, 0, 3, 1)-in_currentTaskSpaceVelocity_var.block<3, 1>(3, 0, 3, 1);
+}
+        else{
+            //position feedback part
+            euler_temp = in_desiredTaskSpacePosition_var.tail<3>();
+            ExpEuler2Quaternion(euler_temp, quat_target);
 
+            euler_temp = in_currentTaskSpacePosition_var.tail<3>();
+            ExpEuler2Quaternion(euler_temp, quat_current);
+
+            QuaternionProduct(quat_target, quat_current, quat_diff);
+
+            LogQuaternion2Euler(quat_diff, euler_diff_pos);
+            euler_diff_pos *= 2;
+
+            //velocity feedback part
+            euler_temp = in_desiredTaskSpaceVelocity_var.tail<3>();
+            ExpEuler2Quaternion(euler_temp, quat_target);
+
+            euler_temp = in_currentTaskSpaceVelocity_var.tail<3>();
+            ExpEuler2Quaternion(euler_temp, quat_current);
+
+            QuaternionProduct(quat_target, quat_current, quat_diff);
+
+            LogQuaternion2Euler(quat_diff, euler_diff_vel);
+            euler_diff_vel *= 2;
+            euler_diff_vel = in_desiredTaskSpaceVelocity_var.tail<3>() - in_currentTaskSpaceVelocity_var.tail<3>(); //TODO: correct?
+        }
 	}
 
 	error_pos =
@@ -159,8 +186,8 @@ void PositionController::updateHook() {
 					* (in_desiredTaskSpaceVelocity_var
 							- in_currentTaskSpaceVelocity_var);
 	if (!receiveTranslationOnly) {
-		error_pos.block<3, 1>(3, 0, 3, 1) = gainP_o * euler_diff;
-		error_vel.block<3, 1>(3, 0, 3, 1) = gainD_o * euler_diff_vel;
+        error_pos.tail<3>() = gainP_o * euler_diff_pos;
+        error_vel.tail<3>() = gainD_o * euler_diff_vel;
 
 
 	}
@@ -380,14 +407,14 @@ void PositionController::displayStatus() {
 }
 
 void PositionController::toEulerAngles(Eigen::Vector3f& res,
-		Eigen::Quaternionf& quat) const {
+        Eigen::Quaternionf const & quat) const {
 	res(0) = atan2(2 * ((quat.w() * quat.x()) + (quat.y() * quat.z())),
 			1 - (2 * ((quat.x() * quat.x()) + (quat.y() * quat.y()))));
 	res(1) = asin(2 * ((quat.w() * quat.y()) - (quat.z() * quat.x())));
 	res(2) = atan2(2 * ((quat.w() * quat.z()) + (quat.x() * quat.y())),
 			1 - (2 * ((quat.y() * quat.y()) + (quat.z() * quat.z()))));
 }
-void PositionController::toQuaternion(Eigen::Vector3f& rpy,
+void PositionController::toQuaternion(Eigen::Vector3f const & rpy,
 		Eigen::Quaternionf& res) const {
 	res.x() = (sin(rpy.x() / 2) * cos(rpy.y() / 2) * cos(rpy.z() / 2))
 			- (cos(rpy.x() / 2) * sin(rpy.y() / 2) * sin(rpy.z() / 2));
@@ -398,6 +425,107 @@ void PositionController::toQuaternion(Eigen::Vector3f& rpy,
 	res.w() = (cos(rpy.x() / 2) * cos(rpy.y() / 2) * cos(rpy.z() / 2))
 			+ (sin(rpy.x() / 2) * sin(rpy.y() / 2) * sin(rpy.z() / 2));
 }
+
+void PositionController::QuaternionProduct(
+        Eigen::Quaternionf const & quat1,
+        Eigen::Quaternionf const & quat2,
+        Eigen::Quaternionf& quatResult) {
+
+    float quaternionV1 = quat1.w();
+    Eigen::Vector3f quaternionU1 = Eigen::Vector3f();
+    quaternionU1(0) = quat1.x();
+    quaternionU1(1) = quat1.y();
+    quaternionU1(2) = quat1.z();
+
+    float quaternionV2 = quat2.w();
+    Eigen::Vector3f quaternionU2 = Eigen::Vector3f();
+    quaternionU2(0) = quat2.x();
+    quaternionU2(1) = quat2.y();
+    quaternionU2(2) = quat2.z();
+
+    float quaternionVResult;
+    Eigen::Vector3f quaternionUResult = Eigen::Vector3f();
+
+    this->QuaternionProduct(quaternionV1, quaternionU1, quaternionV2, quaternionU2, quaternionVResult, quaternionUResult);
+
+    quatResult.w() = quaternionVResult;
+    quatResult.x() = quaternionUResult(0);
+    quatResult.y() = quaternionUResult(1);
+    quatResult.z() = quaternionUResult(2);
+}
+
+void PositionController::QuaternionProduct(
+        float const & quaternionV1,
+        Eigen::Vector3f const & quaternionU1,
+        float const & quaternionV2,
+        Eigen::Vector3f const & quaternionU2,
+        float & resultV,
+        Eigen::Vector3f & resultU) {
+
+    resultV = 	quaternionV1 * quaternionV2 - quaternionU1.transpose() * quaternionU2;
+    resultU = 	quaternionV1 * quaternionU2 +
+                quaternionV2 * quaternionU1 +
+                quaternionU1.cross(quaternionU2);
+}
+
+void PositionController::ExpEuler2Quaternion(Eigen::Vector3f const & euler, Eigen::Quaternionf & quaternion) {
+    float quaternionV;
+    Eigen::Vector3f quaternionU = Eigen::Vector3f();
+
+    this->ExpEuler2Quaternion(euler, quaternionV, quaternionU);
+
+    quaternion.w() = quaternionV;
+    quaternion.x() = quaternionU(0);
+    quaternion.y() = quaternionU(1);
+    quaternion.z() = quaternionU(2);
+}
+
+void PositionController::ExpEuler2Quaternion(Eigen::Vector3f const & euler, float & quaternionV, Eigen::Vector3f & quaternionU) {
+    // equals quaternion = exp(euler)
+
+    if (euler.norm() > 3.14){
+        RTT::log(RTT::Info) << "norm(euler) > pi \n" << euler.norm() << RTT::endlog();
+    }
+
+    if(euler(0) == 0.0 && euler(1) == 0.0 && euler(2) == 0.0){
+        quaternionV = 1.0;
+        quaternionU.setZero();
+    }
+    else{
+        quaternionV = cos(euler.norm());
+        quaternionU = sin(euler.norm()) * euler.transpose() / euler.norm();
+
+        //or use .squaredNorm() here??
+//		quaternionV = cos(euler.squaredNorm());
+//		quaternionU = sin(euler.squaredNorm()) * euler.transpose() / euler.squaredNorm();
+    }
+}
+
+void PositionController::LogQuaternion2Euler(Eigen::Quaternionf const & quaternion, Eigen::Vector3f & euler) {
+    float quaternionV = quaternion.w();
+    Eigen::Vector3f quaternionU = Eigen::Vector3f();
+    quaternionU(0) = quaternion.x();
+    quaternionU(1) = quaternion.y();
+    quaternionU(2) = quaternion.z();
+
+    this->LogQuaternion2Euler(quaternionV, quaternionU, euler);
+}
+
+void PositionController::LogQuaternion2Euler(float const & quaternionV, Eigen::Vector3f const & quaternionU, Eigen::Vector3f & euler) {
+    // equals euler = log(quaternion)
+
+    if(quaternionU(0) == 0.0 && quaternionU(1) == 0.0 && quaternionU(2) == 0.0){
+    //if(quaternionU.norm() == 0.0){
+        euler.setZero();
+    }
+    else{
+        euler = acos(quaternionV) * quaternionU / quaternionU.norm();
+
+        //or use .squaredNorm() here??
+//		euler = acos(quaternionV) * quaternionU / quaternionU.squaredNorm();
+    }
+}
+
 
 //this macro should appear only once per library
 //ORO_CREATE_COMPONENT_LIBRARY()
