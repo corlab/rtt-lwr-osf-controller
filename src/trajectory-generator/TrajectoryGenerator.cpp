@@ -181,9 +181,9 @@ void TrajectoryGenerator::getVelocity(double time, Eigen::VectorXf & ret) {
     ret(0) = tmp(0);
     ret(1) = tmp(1);
     ret(2) = tmp(2);
-    ret(0) = 0;
-    ret(1) = 0;
-    ret(2) = 0;
+    ret(3) = 0;
+    ret(4) = 0;
+    ret(5) = 0;
 
 //    this->getVelocityTranslation(time, ret);
 //    this->getVelocityOrientation(time, ret+3);
