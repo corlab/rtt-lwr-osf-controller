@@ -41,8 +41,8 @@ void NullspaceController::setTranslationOnly(const bool translationOnly) {
 
 bool NullspaceController::configureHook() {
     std::string dynmodel = "idyn";
-//    kdl_component_ptr = getPeer(dynmodel);
-//    computeGravity = kdl_component_ptr->getOperation("computeGravity");
+    kdl_component_ptr = getPeer(dynmodel);
+    computeGravity = kdl_component_ptr->getOperation("computeGravity");
     return true;
 }
 
@@ -92,7 +92,7 @@ void NullspaceController::updateHook() {
 
     //Eq. 13 and Eq. 17
     this->computeDesiredAnglesTorques(desired_torques);
-    //this->computeMinimumEffortTorques(in_robotstatus_var, desired_torques);
+//    this->computeMinimumEffortTorques(in_robotstatus_var, desired_torques);
     out_torques_var.torques = (identityDOFsizeDOFsize - in_jacobian_var.transpose() * in_jacobianInv_var) * desired_torques.torques;
 
     out_torques_port.write(out_torques_var);
