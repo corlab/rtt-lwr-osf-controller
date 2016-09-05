@@ -26,7 +26,8 @@ find_package(rtt-core-extensions REQUIRED)
 include_directories(${RTT-CORE-EXTENSIONS_INCLUDE_DIRS})
 link_directories(${RTT-CORE-EXTENSIONS_LIBRARY_DIRS})
 
-
+find_package(orocos_kdl REQUIRED)
+include_directories(${orocos_kdl_INCLUDE_DIRS})
 # Defines the orocos_* cmake macros. See that file for additional
 # documentation.
 include(${OROCOS-RTT_USE_FILE_PATH}/UseOROCOS-RTT.cmake)
@@ -51,8 +52,6 @@ orocos_component(${CMAKE_PROJECT_NAME}
                                         ${PROJECT_SOURCE_DIR}/nullspace-controller/NullspaceController.cpp
                                         ${PROJECT_SOURCE_DIR}/position-controller/PositionController.hpp
                                         ${PROJECT_SOURCE_DIR}/position-controller/PositionController.cpp
-                                        ${PROJECT_SOURCE_DIR}/position-controller-normal/PositionNormalController.hpp
-                                        ${PROJECT_SOURCE_DIR}/position-controller-normal/PositionNormalController.cpp
                                         ${PROJECT_SOURCE_DIR}/constrained-force-controller/ConstrainedForceController.hpp
                                         ${PROJECT_SOURCE_DIR}/constrained-force-controller/ConstrainedForceController.cpp
                                         ${PROJECT_SOURCE_DIR}/trajectory-generator/TrajectoryGenerator.hpp
@@ -61,6 +60,10 @@ orocos_component(${CMAKE_PROJECT_NAME}
                                         ${PROJECT_SOURCE_DIR}/joint-position-ctrl/JointPositionCtrl.cpp
                                         ${PROJECT_SOURCE_DIR}/torque-transition/TorqueTransition.hpp
                                         ${PROJECT_SOURCE_DIR}/torque-transition/TorqueTransition.cpp
+                                        ${PROJECT_SOURCE_DIR}/position-controller/QuaternionHelper.hpp
+                                        ${PROJECT_SOURCE_DIR}/position-controller/QuaternionHelper.cpp
+                                        ${PROJECT_SOURCE_DIR}/reaching-task/ReachingTask.hpp
+                                        ${PROJECT_SOURCE_DIR}/reaching-task/ReachingTask.cpp
 ) # ...you may add multiple source files
 #
 # You may add multiple orocos_component statements.
@@ -101,7 +104,7 @@ orocos_component(${CMAKE_PROJECT_NAME}
 # You may add multiple orocos_plugin/orocos_service statements.
 
 # target_link_libraries()
-target_link_libraries(${CMAKE_PROJECT_NAME} ${RST-RT_LIBRARIES} ${RTT-CORE-EXTENSIONS_LIBRARIES})
+target_link_libraries(${CMAKE_PROJECT_NAME} ${RST-RT_LIBRARIES} ${RTT-CORE-EXTENSIONS_LIBRARIES} ${orocos_kdl_LIBRARIES})
  
 #
 # Additional headers (not in typekit):

@@ -11,12 +11,15 @@
 TorqueSuperimposer::TorqueSuperimposer(std::string const & name) : RTT::TaskContext(name) {
     //prepare operations
     addOperation("setDOFsize", &TorqueSuperimposer::setDOFsize, this).doc("set DOF size");
+    addOperation("setConstrainedVersionMode", &TorqueSuperimposer::setConstrainedVersionMode, this).doc("set constrained version mode");
     addOperation("setInitialWeights", &TorqueSuperimposer::setInitialWeights, this).doc("set initial weights");
+    addOperation("setWeights", &TorqueSuperimposer::setWeights, this).doc("set weights");
     addOperation("preparePorts", &TorqueSuperimposer::preparePorts, this).doc("prepare ports");
     addOperation("displayStatus", &TorqueSuperimposer::displayStatus, this).doc("print status");
 
     //other stuff
     portsArePrepared = false;
+    this->setConstrainedVersionMode(true);
 }
 
 bool TorqueSuperimposer::configureHook() {
@@ -61,24 +64,23 @@ void TorqueSuperimposer::updateHook() {
     in_torquesB_flow = in_torquesB_port.read(in_torquesB_var);
     in_torquesC_flow = in_torquesC_port.read(in_torquesC_var);
 
-    if (in_torquesA_flow == RTT::NoData || in_torquesB_flow == RTT::NoData || in_torquesC_flow == RTT::NoData || in_projection_flow == RTT::NoData){
-        return;
+    if(useConstrainedVersion){
+        if (in_torquesA_flow == RTT::NoData || in_torquesB_flow == RTT::NoData || in_torquesC_flow == RTT::NoData || in_projection_flow == RTT::NoData){
+            return;
+        }
+        out_torques_var.torques.setZero();
+        out_torques_var.torques += current_weights.weights(0) * in_projection_var * in_torquesA_var.torques;
+        out_torques_var.torques += current_weights.weights(1) * in_projection_var * in_torquesB_var.torques;
+        out_torques_var.torques += current_weights.weights(2) * (identityDOFsizeDOFsize - in_projection_var) * in_torquesC_var.torques;
     }
-
-    out_torques_var.torques.setZero();
-    out_torques_var.torques += current_weights.weights(0) * in_projection_var * in_torquesA_var.torques;
-    out_torques_var.torques += current_weights.weights(1) * in_projection_var * in_torquesB_var.torques;
-    out_torques_var.torques += current_weights.weights(2) * (identityDOFsizeDOFsize - in_projection_var) * in_torquesC_var.torques;
-
-
-//    if (in_torquesA_flow == RTT::NoData || in_torquesB_flow == RTT::NoData){
-//        return;
-//    }
-
-//    out_torques_var.torques.setZero();
-//    out_torques_var.torques += current_weights.weights(0) * in_projection_var * in_torquesA_var.torques;
-//    out_torques_var.torques += current_weights.weights(1) * in_projection_var * in_torquesB_var.torques;
-
+    else{
+        if (in_torquesA_flow == RTT::NoData || in_torquesB_flow == RTT::NoData){
+            return;
+        }
+        out_torques_var.torques.setZero();
+        out_torques_var.torques += current_weights.weights(0) * in_projection_var * in_torquesA_var.torques;
+        out_torques_var.torques += current_weights.weights(1) * in_projection_var * in_torquesB_var.torques;
+    }
 
     out_torques_port.write(out_torques_var);
 }
@@ -101,14 +103,25 @@ void TorqueSuperimposer::setDOFsize(unsigned int DOFsize){
     this->preparePorts();
 }
 
+void TorqueSuperimposer::setConstrainedVersionMode(bool useConstrainedVersion){
+    this->useConstrainedVersion = useConstrainedVersion;
+}
+
 bool TorqueSuperimposer::setInitialWeights(rstrt::robot::Weights & initialWeights) {
     if (initialWeights.weights.size() == 3){
-        current_weights = initialWeights;
+        current_weights.weights = initialWeights.weights;
         return true;
     }
     else{
         return false;
     }
+}
+
+bool TorqueSuperimposer::setWeights(float weightPos, float weightNull, float weightForce){
+    current_weights.weights(0) = weightPos;
+    current_weights.weights(1) = weightNull;
+    current_weights.weights(2) = weightForce;
+    return true;
 }
 
 void TorqueSuperimposer::preparePorts(){

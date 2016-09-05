@@ -17,6 +17,7 @@
 #include <rst-rt/kinematics/JointVelocities.hpp>
 #include <rst-rt/geometry/Rotation.hpp>
 #include <rst-rt/geometry/Translation.hpp>
+#include "QuaternionHelper.hpp"
 
 class PositionController: public RTT::TaskContext {
 public:
@@ -31,29 +32,14 @@ public:
     void cleanupHook();
 
     void setDOFsize(unsigned int DOFsize);
+    void setConstrainedVersionMode(bool useConstrainedVersion);
+    void setTranslationOnly(const bool translationOnly); // call before preparePorts()
     void setGains(float kp, float kd);
     void setGainsOrientation(float kp, float kd);
     void preparePorts();
     void displayStatus();
     void toEulerAngles(Eigen::Vector3f& res, Eigen::Quaternionf const & quat) const;
     void toQuaternion(Eigen::Vector3f const & rpy, Eigen::Quaternionf& res) const;
-
-    void QuaternionProduct(
-            Eigen::Quaternionf const & quat1,
-            Eigen::Quaternionf const & quat2,
-            Eigen::Quaternionf& quatResult);
-    void QuaternionProduct(
-            float const & quaternionV1,
-            Eigen::Vector3f const & quaternionU1,
-            float const & quaternionV2,
-            Eigen::Vector3f const & quaternionU2,
-            float & resultV,
-            Eigen::Vector3f & resultU);
-
-    void ExpEuler2Quaternion(Eigen::Vector3f const & euler, Eigen::Quaternionf & quaternion);
-    void ExpEuler2Quaternion(Eigen::Vector3f const & euler, float & quaternionV, Eigen::Vector3f & quaternionU);
-    void LogQuaternion2Euler(Eigen::Quaternionf const & quaternion, Eigen::Vector3f & euler);
-    void LogQuaternion2Euler(float const & quaternionV, Eigen::Vector3f const & quaternionU, Eigen::Vector3f & euler);
 
 private:
     // Declare input ports and their datatypes
@@ -113,9 +99,10 @@ private:
     rstrt::dynamics::JointTorques out_torques_var;
 
     Eigen::AngleAxisf rotx, roty, rotz;
+    Eigen::Vector4f quaternion_desired, quaternion_current, quaternion_current_conj, quaternion_diff;
     Eigen::Quaternionf quat_target,quat_current,quat_diff;
-    Eigen::Vector3f euler_diff_pos, euler_diff_vel, euler_temp,euler_temp2;
-    Eigen::Matrix3f temp_mat;
+    Eigen::Vector3f error_o_pos, error_o_vel, euler_temp;
+    Eigen::Vector3f axisangle_temp;
     Eigen::VectorXf error_pos, error_vel;
 
     unsigned int DOFsize;
@@ -123,9 +110,8 @@ private:
     unsigned int TaskSpaceDimension;
     float gainP, gainD, gainP_o, gainD_o;
     bool portsArePrepared;
+    bool useConstrainedVersion;
     Eigen::VectorXf ref_Acceleration, constraintForce;
-
-    // call before preparePorts()
-	void setTranslationOnly(const bool translationOnly);
+    QuaternionHelper qh;
 };
 

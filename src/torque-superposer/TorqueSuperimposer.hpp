@@ -27,7 +27,9 @@ public:
     void cleanupHook();
 
     void setDOFsize(unsigned int DOFsize);
+    void setConstrainedVersionMode(bool useConstrainedVersion);
     bool setInitialWeights(rstrt::robot::Weights & initialWeights);
+    bool setWeights(float weightPos, float weightNull, float weightForce);
     void preparePorts();
     void displayStatus();
 
@@ -60,5 +62,6 @@ private:
     Eigen::MatrixXf identityDOFsizeDOFsize;
     rstrt::robot::Weights current_weights;
     bool portsArePrepared;
+    bool useConstrainedVersion;
 };
 

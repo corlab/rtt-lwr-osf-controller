@@ -17,6 +17,8 @@
 #include <rst-rt/kinematics/JointVelocities.hpp>
 #include <rst-rt/geometry/Rotation.hpp>
 #include <rst-rt/geometry/Translation.hpp>
+#include <kdl/frames.hpp>
+
 
 class TrajectoryGenerator: public RTT::TaskContext {
 public:
@@ -75,7 +77,8 @@ private:
     double start_time, current_time, time_diff;
     double _timescale;
     Eigen::MatrixXf BoardRot;
-    Eigen::VectorXf BoardTransl, TipOrientation;
+    Eigen::VectorXf BoardTransl;
+    Eigen::Vector3f TipOrientationEulerZYXAngle, TipOrientationAxisAngle;
     Eigen::VectorXf tmp;
 };
 

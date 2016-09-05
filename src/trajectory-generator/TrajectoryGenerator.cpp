@@ -22,9 +22,10 @@ TrajectoryGenerator::TrajectoryGenerator(std::string const & name) : RTT::TaskCo
     start_time = 0.0;
     _timescale = 0.6;
 
-    BoardRot = Eigen::MatrixXf(3,3);
-    BoardTransl = Eigen::VectorXf(3);
-    TipOrientation = Eigen::VectorXf(3);
+    BoardRot = Eigen::MatrixXf::Zero(3,3);
+    BoardTransl = Eigen::Vector3f::Zero();
+    TipOrientationEulerZYXAngle = Eigen::Vector3f::Zero();
+    TipOrientationAxisAngle = Eigen::Vector3f::Zero();
     tmp = Eigen::VectorXf(3);
 
     setTranslationOnly(true);
@@ -42,9 +43,9 @@ TrajectoryGenerator::TrajectoryGenerator(std::string const & name) : RTT::TaskCo
 //	BoardTransl(1) = 0.0;
 //	BoardTransl(2) = 0.75;//0.7;
 //
-//    TipOrientation(0) = 0;
-//    TipOrientation(1) = -M_PI - boardAngle_rad;
-//    TipOrientation(2) = 0;
+//    TipOrientationEulerZYXAngle(0) = 0;
+//    TipOrientationEulerZYXAngle(1) = -M_PI - boardAngle_rad;
+//    TipOrientationEulerZYXAngle(2) = 0;
 //    radius = 0.15;
 
     // board parallel to floor
@@ -61,9 +62,20 @@ TrajectoryGenerator::TrajectoryGenerator(std::string const & name) : RTT::TaskCo
     BoardTransl(1) = 0;
     BoardTransl(2) = 0.5;
 
-    TipOrientation(0) = 0;
-    TipOrientation(1) = -M_PI - boardAngle_rad;
-    TipOrientation(2) = 0;
+    TipOrientationEulerZYXAngle(0) = 0;
+    TipOrientationEulerZYXAngle(1) = -M_PI - boardAngle_rad;
+    TipOrientationEulerZYXAngle(2) = 0;
+
+    //convert EulerZYX to AxisAngle
+    KDL::Rotation r;
+    KDL::Vector kdl_axisangle;
+    r = KDL::Rotation::EulerZYX(TipOrientationEulerZYXAngle(0), TipOrientationEulerZYXAngle(1), TipOrientationEulerZYXAngle(2));
+    kdl_axisangle = KDL::Vector();
+    kdl_axisangle = r.GetRot();
+    TipOrientationAxisAngle(0) = kdl_axisangle.x();
+    TipOrientationAxisAngle(1) = kdl_axisangle.y();
+    TipOrientationAxisAngle(2) = kdl_axisangle.z();
+
     radius = 0.15;
 }
 
@@ -163,9 +175,9 @@ void TrajectoryGenerator::getPosition(double time, Eigen::VectorXf & ret) {
     ret(0) = tmp(0);
     ret(1) = tmp(1);
     ret(2) = tmp(2);
-    ret(3) = TipOrientation(0);
-    ret(4) = TipOrientation(1);
-    ret(5) = TipOrientation(2);
+    ret(3) = TipOrientationAxisAngle(0);
+    ret(4) = TipOrientationAxisAngle(1);
+    ret(5) = TipOrientationAxisAngle(2);
 
 //    this->getPositionTranslation(time, ret);
 //    this->getPositionOrientation(time, ret+3);
@@ -231,9 +243,9 @@ void TrajectoryGenerator::getAccelerationTranslation(double time, Eigen::VectorX
 }
 
 void TrajectoryGenerator::getPositionOrientation(double time, Eigen::VectorXf & ret) {
-    ret(0) = TipOrientation(0);
-    ret(1) = TipOrientation(1);
-    ret(2) = TipOrientation(2);
+    ret(0) = TipOrientationAxisAngle(0);
+    ret(1) = TipOrientationAxisAngle(1);
+    ret(2) = TipOrientationAxisAngle(2);
 }
 
 void TrajectoryGenerator::getVelocityOrientation(double time, Eigen::VectorXf & ret) {
