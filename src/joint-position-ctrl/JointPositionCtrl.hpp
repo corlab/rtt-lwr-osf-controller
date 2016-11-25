@@ -15,6 +15,7 @@
 #include <rst-rt/kinematics/JointAngles.hpp>
 #include <rst-rt/kinematics/JointVelocities.hpp>
 
+
 class JointPositionCtrl: public RTT::TaskContext {
 public:
     JointPositionCtrl(std::string const & name);
@@ -42,6 +43,8 @@ private:
     // Declare input ports and their datatypes
     RTT::InputPort<rstrt::robot::JointState> in_robotstatus_port;
 
+    RTT::InputPort<Eigen::VectorXf> gravity_vector_port;
+
     // Declare output ports and their datatypes
     RTT::OutputPort<rstrt::dynamics::JointTorques> out_torques_port;
 
@@ -51,6 +54,7 @@ private:
     // variables
     rstrt::robot::JointState in_robotstatus_var;
     rstrt::dynamics::JointTorques out_torques_var;
+    Eigen::VectorXf gravity_vector_var;
     unsigned int DOFsize;
     float gainP, gainD;
     rstrt::kinematics::JointAngles desJointAngles;

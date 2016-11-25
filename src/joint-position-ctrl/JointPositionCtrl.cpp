@@ -42,6 +42,7 @@ void JointPositionCtrl::updateHook() {
     if (in_robotstatus_port.connected()) {
         // read data and save state of data into "Flow", which can be "NewData", "OldData" or "NoData".
         in_robotstatus_flow = in_robotstatus_port.read(in_robotstatus_var);
+        gravity_vector_port.read(gravity_vector_var);
     } else {
         // handle the situation
     }
@@ -137,6 +138,11 @@ void JointPositionCtrl::preparePorts(){
     ports()->addPort(in_robotstatus_port);
     in_robotstatus_flow = RTT::NoData;
 
+    // test port:
+    gravity_vector_var = Eigen::VectorXf(DOFsize);
+    gravity_vector_port.setName("gravity_vector_input_port");
+    ports()->addPort(gravity_vector_port);
+
     //prepare output
     out_torques_var = rstrt::dynamics::JointTorques(DOFsize);
     out_torques_var.torques.setZero();
@@ -152,7 +158,7 @@ void JointPositionCtrl::computeJointTorques(rstrt::robot::JointState const & joi
                                             rstrt::kinematics::JointAngles const & desJointAngles,
                                             rstrt::kinematics::JointVelocities const & desJointVelocities,
                                             rstrt::dynamics::JointTorques & jointTorques) {
-    jointTorques.torques = gainP * (desJointAngles.angles - jointState.angles) + gainD * (desJointVelocities.velocities - jointState.velocities);
+    jointTorques.torques = gainP * (desJointAngles.angles - jointState.angles) + gainD * (desJointVelocities.velocities - jointState.velocities);//- gravity_vector_var;
 }
 
 void JointPositionCtrl::printCurrentState(){
