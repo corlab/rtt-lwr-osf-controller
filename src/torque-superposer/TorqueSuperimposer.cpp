@@ -78,8 +78,8 @@ void TorqueSuperimposer::updateHook() {
             return;
         }
         out_torques_var.torques.setZero();
-        out_torques_var.torques += current_weights.weights(0) * in_projection_var * in_torquesA_var.torques;
-        out_torques_var.torques += current_weights.weights(1) * in_projection_var * in_torquesB_var.torques;
+        out_torques_var.torques += current_weights.weights(0) * in_torquesA_var.torques;
+        out_torques_var.torques += current_weights.weights(1) * in_torquesB_var.torques;
     }
 
     out_torques_port.write(out_torques_var);
