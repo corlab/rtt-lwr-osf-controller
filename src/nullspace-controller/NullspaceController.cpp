@@ -8,7 +8,7 @@
 #include <rtt/Component.hpp> // needed for the macro at the end of this file
 
 
-NullspaceController::NullspaceController(std::string const & name) : RTT::TaskContext(name), receiveTranslationOnly(true) {
+NullspaceController::NullspaceController(std::string const & name) : RTT::TaskContext(name) {
     //prepare operations
     addOperation("setDOFsize", &NullspaceController::setDOFsize, this).doc("set DOF size");
     addOperation("setGains", &NullspaceController::setGains, this).doc("set gains");
@@ -17,32 +17,20 @@ NullspaceController::NullspaceController(std::string const & name) : RTT::TaskCo
 
     addOperation("preparePorts", &NullspaceController::preparePorts, this).doc(
     				"preparePorts");
-
-    addOperation("setTranslationOnly", &NullspaceController::setTranslationOnly,
-    			this, RTT::ClientThread).doc(
-    			"set translation only, or use also orientation");
+    addOperation("setTaskSpaceDimension", &NullspaceController::setTaskSpaceDimension,
+            this, RTT::ClientThread).doc(
+            "set TaskSpaceDimension");
 
     //other stuff
     gainP = 1;
     gainD = 0;
-    setTranslationOnly(true);
     portsArePrepared = false;
 }
 
-void NullspaceController::setTranslationOnly(const bool translationOnly) {
-	receiveTranslationOnly = translationOnly;
-	if(receiveTranslationOnly){
-		TaskSpaceDimension = 3;
-	}
-	else{
-		TaskSpaceDimension = 6;
-	}
-}
-
 bool NullspaceController::configureHook() {
-    std::string dynmodel = "idyn";
-    kdl_component_ptr = getPeer(dynmodel);
-    computeGravity = kdl_component_ptr->getOperation("computeGravity");
+//    std::string dynmodel = "idyn";
+//    kdl_component_ptr = getPeer(dynmodel);
+//    computeGravity = kdl_component_ptr->getOperation("computeGravity");
     return true;
 }
 
@@ -114,6 +102,10 @@ void NullspaceController::setDOFsize(unsigned int DOFsize){
     this->desired_torques = rstrt::dynamics::JointTorques(DOFsize);
 }
 
+void NullspaceController::setTaskSpaceDimension(const unsigned int TaskSpaceDimension) {
+    this->TaskSpaceDimension = TaskSpaceDimension;
+}
+
 void NullspaceController::setGains(float kp, float kd){
     assert(kp>=0);
     assert(kd>=0);
@@ -153,7 +145,7 @@ void NullspaceController::computeMinimumEffortTorques(
     jointTorques.torques.setZero();
 
     gravitycompensation.setZero();
-    computeGravity(jointState, gravitycompensation);
+    //computeGravity(jointState, gravitycompensation);
 
     // equation 4 in the paper (without a weighting diagonal matrix)
     // effort = 1x1 = 1 x numjoints * numjoints x 1
@@ -168,7 +160,7 @@ void NullspaceController::computeMinimumEffortTorques(
 
         // Gravity compensation with one specific blured joint
         gravitycompensationEPS.setZero();
-        computeGravity(jointStateEPS, gravitycompensationEPS);
+        //computeGravity(jointStateEPS, gravitycompensationEPS);
 
         // calculate effort again
         // effort = 1x1 = 1 x numjoints * numjoints x 1

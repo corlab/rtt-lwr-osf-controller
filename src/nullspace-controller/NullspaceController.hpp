@@ -28,6 +28,7 @@ public:
     void cleanupHook();
 
     void setDOFsize(unsigned int DOFsize);
+    void setTaskSpaceDimension(const unsigned int TaskSpaceDimension);
     void setGains(float kp, float kd);
     bool setDesiredAngles(rstrt::kinematics::JointAngles desiredAngles);
     void computeDesiredAnglesTorques(rstrt::dynamics::JointTorques & jointTorques);
@@ -64,7 +65,6 @@ private:
     rstrt::kinematics::JointAngles current_desiredAngles;
     rstrt::dynamics::JointTorques desired_torques;
     unsigned int DOFsize;
-    bool receiveTranslationOnly;
     unsigned int TaskSpaceDimension;
     float gainP, gainD;
     bool portsArePrepared;
@@ -72,8 +72,5 @@ private:
     //OperationCaller
     TaskContext* kdl_component_ptr;
     RTT::OperationCaller<void(rstrt::robot::JointState const & , Eigen::VectorXf &)> computeGravity;
-
-    // call right after setDOFSize()
-	void setTranslationOnly(const bool translationOnly);
 };
 

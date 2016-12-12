@@ -28,6 +28,7 @@ public:
 	void cleanupHook();
 
 	void setDOFsize(unsigned int DOFsize);
+    void setCstrSpaceDimension(const unsigned int CstrSpaceDimension);
     void setLambda(Eigen::VectorXf new_lambda);
 	void preparePorts();
     void displayStatus();
@@ -71,10 +72,7 @@ private:
 
 	unsigned int DOFsize;
 	bool receiveTranslationOnly;
-	unsigned int TaskSpaceDimension;
+    unsigned int CstrSpaceDimension;
 	bool portsArePrepared;
-
-	// call right after setDOFSize()
-	void setTranslationOnly(const bool translationOnly);
 };
 

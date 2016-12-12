@@ -8,7 +8,7 @@
 #include <rtt/Component.hpp> // needed for the macro at the end of this file
 
 PositionController::PositionController(std::string const & name) :
-		RTT::TaskContext(name), receiveTranslationOnly(true) {
+        RTT::TaskContext(name) {
 	//prepare operations
 	addOperation("setDOFsize", &PositionController::setDOFsize, this).doc(
 			"set DOF size");
@@ -23,23 +23,19 @@ PositionController::PositionController(std::string const & name) :
 			"print status");
 	addOperation("preparePorts", &PositionController::preparePorts, this).doc(
 			"preparePorts");
+    addOperation("setTaskSpaceDimension", &PositionController::setTaskSpaceDimension,
+            this, RTT::ClientThread).doc(
+            "set TaskSpaceDimension");
 	addOperation("setTranslationOnly", &PositionController::setTranslationOnly,
 			this, RTT::ClientThread).doc(
 			"set translation only, or use also orientation");
 
 	//other stuff
-	gainP = 100;
-	gainD = 20;
+    gainTranslationP = 100;
+    gainTranslationD = 20;
 	portsArePrepared = false;
     this->setConstrainedVersionMode(true);
     this->setTranslationOnly(true);
-
-	rotx = Eigen::AngleAxisf(0, Eigen::Vector3f::UnitX());
-	roty = Eigen::AngleAxisf(0, Eigen::Vector3f::UnitY());
-	rotz = Eigen::AngleAxisf(0, Eigen::Vector3f::UnitZ());
-//	rotx.axis() = Eigen::Vector3f::UnitX();
-//	roty.axis() = Eigen::Vector3f::UnitY();
-//	rotz.axis() = Eigen::Vector3f::UnitZ();
 
     quaternion_desired = Eigen::Vector4f::Zero();
     quaternion_current = Eigen::Vector4f::Zero();
@@ -50,10 +46,16 @@ PositionController::PositionController(std::string const & name) :
     quat_current = Eigen::Quaternionf();
     quat_diff = Eigen::Quaternionf();
 
-    error_o_pos = Eigen::Vector3f::Zero();
-    error_o_vel = Eigen::Vector3f::Zero();
-    euler_temp = Eigen::Vector3f::Zero();
-    axisangle_temp = Eigen::Vector3f::Zero();
+    desiredPosition = Eigen::Vector3f::Zero();
+    currentPosition = Eigen::Vector3f::Zero();
+    desiredVelocity = Eigen::Vector3f::Zero();
+    currentVelocity = Eigen::Vector3f::Zero();
+
+    errorTranslationPosition = Eigen::Vector3f::Zero();
+    errorTranslationVelocity = Eigen::Vector3f::Zero();
+    errorOrientationPosition = Eigen::Vector3f::Zero();
+    errorOrientationVelocity = Eigen::Vector3f::Zero();
+
     qh = QuaternionHelper();
 }
 
@@ -173,134 +175,30 @@ void PositionController::updateHook() {
 			|| in_P_flow == RTT::NoData || in_constraintC_flow == RTT::NoData) {
 		return;
 	}
-	if (!receiveTranslationOnly) {
-        if (false) {
-			//position feedback part
-//		rotx.angle() = in_desiredTaskSpacePosition_var(3);
-//		roty.angle() = in_desiredTaskSpacePosition_var(4);
-//		rotz.angle() = in_desiredTaskSpacePosition_var(5);
-//		quat_target = rotx * roty * rotz;
-			euler_temp = in_desiredTaskSpacePosition_var.tail<3>();
-			toQuaternion(euler_temp, quat_target);
-			quat_target.normalize();
-//		rotx.angle() = in_currentTaskSpacePosition_var(3);
-//		roty.angle() = in_currentTaskSpacePosition_var(4);
-//		rotz.angle() = in_currentTaskSpacePosition_var(5);
-//		quat_current = rotx * roty * rotz;
-			euler_temp = in_currentTaskSpacePosition_var.tail<3>();
-			toQuaternion(euler_temp, quat_current);
-			quat_current.normalize();
-//			std::cout<<quat_current.w()<<", "<<quat_current.x()<<", "<<quat_current.y()<<", "<<quat_current.z()<<", norm:"<<quat_current.norm()<<" END"<<"\n------------------\n";
-			quat_diff = quat_target * (quat_current.inverse());
-			quat_diff.normalize();
 
-            toEulerAngles(error_o_pos, quat_diff);
+    desiredPosition = in_desiredTaskSpacePosition_var.head<3>();
+    currentPosition = in_currentTaskSpacePosition_var.head<3>();
+    desiredVelocity = in_desiredTaskSpaceVelocity_var.head<3>();
+    currentVelocity = in_currentTaskSpaceVelocity_var.head<3>();
+    this->computeTranslationError(desiredPosition, currentPosition, desiredVelocity, currentVelocity,
+                                  errorTranslationPosition, errorTranslationVelocity);
+    errorPosition.head<3>() = gainTranslationP * errorTranslationPosition;
+    errorVelocity.head<3>() = gainTranslationD * errorTranslationVelocity;
 
-			//velocity feedback part
-//		rotx.angle() = in_desiredTaskSpaceVelocity_var(3);
-//		roty.angle() = in_desiredTaskSpaceVelocity_var(4);
-//		rotz.angle() = in_desiredTaskSpaceVelocity_var(5);
-//		quat_target = rotx * roty * rotz;
-			euler_temp = in_desiredTaskSpaceVelocity_var.tail<3>();
-			toQuaternion(euler_temp, quat_target);
-			quat_target.normalize();
-//		rotx.angle() = in_currentTaskSpaceVelocity_var(3);
-//		roty.angle() = in_currentTaskSpaceVelocity_var(4);
-//		rotz.angle() = in_currentTaskSpaceVelocity_var(5);
-//		quat_current = rotx * roty * rotz;
-			euler_temp = in_currentTaskSpaceVelocity_var.tail<3>();
-			toQuaternion(euler_temp, quat_current);
-			quat_current.normalize();
-			quat_diff = quat_target * (quat_current.inverse());
-			quat_diff.normalize();
-
-            toEulerAngles(error_o_vel, quat_diff);
-		} else {
-            error_o_pos.setZero();
-            error_o_vel.setZero();
-
-            //position feedback part
-            //version 1
-//            axisangle_temp = in_desiredTaskSpacePosition_var.tail<3>();
-//            qh.AxisAngle2Quaternion(axisangle_temp, quaternion_desired);
-
-//            axisangle_temp = in_currentTaskSpacePosition_var.tail<3>();
-//            qh.AxisAngle2Quaternion(axisangle_temp, quaternion_current);
-
-//            Eigen::MatrixXf skewmat;
-//            skewmat = Eigen::MatrixXf::Zero(3,3);
-//            skewmat(0,1) = - quaternion_desired(3);
-//            skewmat(0,2) = + quaternion_desired(2);
-//            skewmat(1,2) = - quaternion_desired(1);
-
-//            skewmat(1,0) = + quaternion_desired(3);
-//            skewmat(2,0) = - quaternion_desired(2);
-//            skewmat(2,1) = + quaternion_desired(1);
-
-//            error_o_pos = quaternion_desired(0) * quaternion_current.tail<3>()
-//                             - quaternion_current(0) * quaternion_desired.tail<3>()
-//                             + skewmat * quaternion_current.tail<3>();
-
-            //version 2
-            axisangle_temp = in_desiredTaskSpacePosition_var.tail<3>();
-            qh.ExpAxisAngle2Quaternion(axisangle_temp, quaternion_desired);
-
-            axisangle_temp = in_currentTaskSpacePosition_var.tail<3>();
-            qh.ExpAxisAngle2Quaternion(axisangle_temp, quaternion_current);
-
-            qh.ConjugateQuaternion(quaternion_current, quaternion_current_conj);
-
-            qh.QuaternionProduct(quaternion_desired, quaternion_current_conj, quaternion_diff);
-
-            float n=pow(quaternion_diff(0),2) + pow(quaternion_diff(1),2) + pow(quaternion_diff(2),2) + pow(quaternion_diff(3),2);
-            if (n > 1.1){
-                std::cout << " norm(quaternion_diff) = " << n << std::endl;
-            }
-            if (n < 0.9){
-                std::cout << " norm(quaternion_diff) = " << n << std::endl;
-            }
-
-            qh.LogQuaternion2AxisAngle(quaternion_diff, error_o_pos);
-            error_o_pos *= 2;
-
-            //velocity feedback part
-//            euler_temp = in_desiredTaskSpaceVelocity_var.tail<3>();
-//            ExpAxisAngle2Quaternion(euler_temp, quaternion_desired);
-
-//            euler_temp = in_currentTaskSpaceVelocity_var.tail<3>();
-//            ExpAxisAngle2Quaternion(euler_temp, quaternion_current);
-
-//            ConjugateQuaternion(quaternion_current, quaternion_current_conj);
-
-//            QuaternionProduct(quaternion_desired, quaternion_current_conj, quaternion_diff);
-
-//            LogQuaternion2AxisAngle(quaternion_diff, error_o_vel);
-//            error_o_vel *= 2;
-
-//            error_o_vel = in_desiredTaskSpaceVelocity_var.tail<3>()
-//                          - in_currentTaskSpaceVelocity_var.tail<3>(); //TODO: correct?
-
-//            error_o_vel = - euler_temp;
-		}
-	}
-
-	error_pos =
-			gainP
-					* (in_desiredTaskSpacePosition_var
-							- in_currentTaskSpacePosition_var);
-	error_vel =
-			gainD
-					* (in_desiredTaskSpaceVelocity_var
-							- in_currentTaskSpaceVelocity_var);
-	if (!receiveTranslationOnly) {
-        error_pos.tail<3>() = gainP_o * error_o_pos;
-        error_vel.tail<3>() = gainD_o * error_o_vel;
-
-	}
+    if (!receiveTranslationOnly) {
+        desiredPosition = in_desiredTaskSpacePosition_var.tail<3>();
+        currentPosition = in_currentTaskSpacePosition_var.tail<3>();
+        desiredVelocity = in_desiredTaskSpaceVelocity_var.tail<3>();
+        currentVelocity = in_currentTaskSpaceVelocity_var.tail<3>();
+        this->computeOrientationError(desiredPosition, currentPosition, desiredVelocity, currentVelocity,
+                                      errorOrientationPosition, errorOrientationVelocity);
+        errorPosition.tail<3>() = gainOrientationP * errorOrientationPosition;
+        errorVelocity.tail<3>() = gainOrientationD * errorOrientationVelocity;
+    }
 
 	// reference acceleration for cartesian task
-	ref_Acceleration = in_desiredTaskSpaceAcceleration_var + (error_pos)
-			+ (error_vel);
+    ref_Acceleration = in_desiredTaskSpaceAcceleration_var + (errorPosition)
+            + (errorVelocity);
 
 	//Start Khatib projected endeffector motion controller
     if(useConstrainedVersion){
@@ -323,6 +221,9 @@ void PositionController::updateHook() {
 	out_torques_var.torques.setZero();
 	out_torques_var.torques = in_jacobian_var.transpose() * constraintForce;
 	out_torques_port.write(out_torques_var);
+
+    out_force_var = constraintForce;
+    out_force_port.write(out_force_var);
 }
 
 void PositionController::stopHook() {
@@ -341,29 +242,91 @@ void PositionController::setConstrainedVersionMode(bool useConstrainedVersion){
     this->useConstrainedVersion = useConstrainedVersion;
 }
 
+void PositionController::setTaskSpaceDimension(const unsigned int TaskSpaceDimension) {
+    this->TaskSpaceDimension = TaskSpaceDimension;
+    errorPosition = Eigen::VectorXf::Zero(TaskSpaceDimension);
+    errorVelocity = Eigen::VectorXf::Zero(TaskSpaceDimension);
+    ref_Acceleration = Eigen::VectorXf::Zero(TaskSpaceDimension);
+    constraintForce = Eigen::VectorXf::Zero(TaskSpaceDimension);
+}
+
 void PositionController::setTranslationOnly(const bool translationOnly) {
 	receiveTranslationOnly = translationOnly;
-	if (receiveTranslationOnly) {
-		TaskSpaceDimension = 3;
-	} else {
-		TaskSpaceDimension = 6;
-	}
-
-    error_pos = Eigen::VectorXf(TaskSpaceDimension);
-    error_vel = Eigen::VectorXf(TaskSpaceDimension);
 }
 void PositionController::setGains(float kp, float kd) {
 	assert(kp >= 0);
 	assert(kd >= 0);
-	gainP = kp;
-	gainD = kd;
+    gainTranslationP = kp;
+    gainTranslationD = kd;
 }
 
 void PositionController::setGainsOrientation(float kp, float kd) {
 	assert(kp >= 0);
 	assert(kd >= 0);
-	gainP_o = kp;
-	gainD_o = kd;
+    gainOrientationP = kp;
+    gainOrientationD = kd;
+}
+
+
+void PositionController::computeTranslationError(
+        Eigen::Vector3f const & desiredPosition,
+        Eigen::Vector3f const & currentPosition,
+        Eigen::Vector3f const & desiredVelocity,
+        Eigen::Vector3f const & currentVelocity,
+        Eigen::Vector3f & errorPosition,
+        Eigen::Vector3f & errorVelocity) {
+    errorPosition.setZero();
+    errorVelocity.setZero();
+
+    errorPosition = desiredPosition - currentPosition;
+    errorVelocity = desiredVelocity - currentVelocity;
+}
+
+void PositionController::computeOrientationError(
+        Eigen::Vector3f const & axisangle_desiredPosition,
+        Eigen::Vector3f const & axisangle_currentPosition,
+        Eigen::Vector3f const & axisangle_desiredVelocity,
+        Eigen::Vector3f const & axisangle_currentVelocity,
+        Eigen::Vector3f & errorPosition,
+        Eigen::Vector3f & errorVelocity) {
+
+    //orientation position feedback part
+    errorPosition.setZero();
+    qh.AxisAngle2Quaternion(axisangle_desiredPosition, quaternion_desired);
+    qh.AxisAngle2Quaternion(axisangle_currentPosition, quaternion_current);
+
+    //version 1
+//    Eigen::MatrixXf skewmat;
+//    skewmat = Eigen::MatrixXf::Zero(3,3);
+//    skewmat(0,1) = - quaternion_desired(3);
+//    skewmat(0,2) = + quaternion_desired(2);
+//    skewmat(1,2) = - quaternion_desired(1);
+
+//    skewmat(1,0) = + quaternion_desired(3);
+//    skewmat(2,0) = - quaternion_desired(2);
+//    skewmat(2,1) = + quaternion_desired(1);
+
+//    errorPosition = quaternion_desired(0) * quaternion_current.tail<3>()
+//                 - quaternion_current(0) * quaternion_desired.tail<3>()
+//                 + skewmat * quaternion_current.tail<3>();
+
+    //version 2
+    qh.ConjugateQuaternion(quaternion_current, quaternion_current_conj);
+    qh.QuaternionProduct(quaternion_desired, quaternion_current_conj, quaternion_diff);
+
+    float n=pow(quaternion_diff(0),2) + pow(quaternion_diff(1),2) + pow(quaternion_diff(2),2) + pow(quaternion_diff(3),2);
+    if (n > 1.1){
+        std::cout << " norm(quaternion_diff) = " << n << std::endl;
+    }
+    if (n < 0.9){
+        std::cout << " norm(quaternion_diff) = " << n << std::endl;
+    }
+
+    qh.LogQuaternion2AxisAngle(quaternion_diff, errorPosition);
+    errorPosition *= 2;
+
+    //TODO orientation velocity feedback part missing
+    errorVelocity.setZero();
 }
 
 void PositionController::preparePorts() {
@@ -385,7 +348,7 @@ void PositionController::preparePorts() {
 		ports()->removePort("in_constraintC_port");     //18
 
 		ports()->removePort("out_torques_port");
-
+        ports()->removePort("out_force_port");
 	}
 
 	//prepare input
@@ -491,10 +454,21 @@ void PositionController::preparePorts() {
 	out_torques_port.setDataSample(out_torques_var);
 	ports()->addPort(out_torques_port);
 
+    out_force_var = Eigen::VectorXf(TaskSpaceDimension);
+    out_force_var.setZero();
+    out_force_port.setName("out_force_port");
+    out_force_port.doc("Output port for sending force vector");
+    out_force_port.setDataSample(out_force_var);
+    ports()->addPort(out_force_port);
+
 	portsArePrepared = true;
 }
 
 void PositionController::displayStatus() {
+	RTT::log(RTT::Info) << "in_robotstatus_var.angles \n"
+			<< in_robotstatus_var.angles << RTT::endlog();
+	RTT::log(RTT::Info) << "in_robotstatus_var.velocities \n"
+			<< in_robotstatus_var.velocities << RTT::endlog();
 	RTT::log(RTT::Info) << "in_desiredTaskSpacePosition_var \n"
 			<< in_desiredTaskSpacePosition_var << RTT::endlog();
 	RTT::log(RTT::Info) << "in_desiredTaskSpaceVelocity_var \n"
@@ -522,25 +496,20 @@ void PositionController::displayStatus() {
 	RTT::log(RTT::Info) << "out_torques_var \n" << out_torques_var.torques
 			<< RTT::endlog();
 
-//    RTT::log(RTT::Info) << "quaternion_current \n" << quaternion_current
-//            << RTT::endlog();
-//    RTT::log(RTT::Info) << "quaternion_desired \n" << quaternion_desired
-//            << RTT::endlog();
-//    RTT::log(RTT::Info) << "error_t_pos \n" << (in_desiredTaskSpacePosition_var.head<3>() - in_currentTaskSpacePosition_var.head<3>())
-//            << RTT::endlog();
-//    RTT::log(RTT::Info) << "error_t_vel \n" << (in_desiredTaskSpaceVelocity_var.head<3>() - in_currentTaskSpaceVelocity_var.head<3>())
-//            << RTT::endlog();
+	RTT::log(RTT::Info) << "ref_Acceleration \n" << ref_Acceleration
+			<< RTT::endlog();
+	RTT::log(RTT::Info) << "constraintForce \n" << constraintForce
+			<< RTT::endlog();
 
-    if(TaskSpaceDimension==6){
-//        RTT::log(RTT::Info) << "error_o_pos direct \n" << (in_desiredTaskSpacePosition_var.tail<3>() - in_currentTaskSpacePosition_var.tail<3>())
-//                << RTT::endlog();
-//        RTT::log(RTT::Info) << "error_o_vel direct \n" << (in_desiredTaskSpaceVelocity_var.tail<3>() - in_currentTaskSpaceVelocity_var.tail<3>())
-//                << RTT::endlog();
+    RTT::log(RTT::Info) << "errorTranslationPosition \n" << errorTranslationPosition << RTT::endlog();
+    RTT::log(RTT::Info) << "errorTranslationVelocity \n" << errorTranslationVelocity << RTT::endlog();
 
-//        RTT::log(RTT::Info) << "error_o_pos \n" << error_o_pos
-//                << RTT::endlog();
-//        RTT::log(RTT::Info) << "error_o_vel \n" << error_o_vel
-//                << RTT::endlog();
+    if(!receiveTranslationOnly){
+        RTT::log(RTT::Info) << "errorOrientationPosition \n" << errorOrientationPosition << RTT::endlog();
+        RTT::log(RTT::Info) << "errorOrientationVelocity \n" << errorOrientationVelocity << RTT::endlog();
+
+        RTT::log(RTT::Info) << "quaternion_current \n" << quaternion_current << RTT::endlog();
+        RTT::log(RTT::Info) << "quaternion_desired \n" << quaternion_desired << RTT::endlog();
 
 //        Eigen::VectorXf foobar = Eigen::VectorXf::Zero(6);
 //        foobar(0) = 1.1;
@@ -549,40 +518,17 @@ void PositionController::displayStatus() {
 //        foobar(3) = 4.4;
 //        foobar(4) = 5.5;
 //        foobar(5) = 6.6;
-
 //        RTT::log(RTT::Info) << "foobar \n" << foobar << RTT::endlog();
 //        RTT::log(RTT::Info) << "foobar.tail<3>() \n" << foobar.tail<3>() << RTT::endlog();
 //        RTT::log(RTT::Info) << "foobar.tail(3) \n" << foobar.tail(3) << RTT::endlog();
-
-        //axisangle_temp = in_desiredTaskSpacePosition_var.tail<3>();
+//        Eigen::Vector3f axisangle_temp;
+//        axisangle_temp = Eigen::Vector3f::Zero();
+//        axisangle_temp = in_desiredTaskSpacePosition_var.tail<3>();
 //        axisangle_temp = in_currentTaskSpacePosition_var.tail<3>();
 //        qh.test(axisangle_temp);
     }
 }
 
-void PositionController::toEulerAngles(Eigen::Vector3f& res,
-		Eigen::Quaternionf const & quat) const {
-//	res(0) = atan2(2 * ((quat.w() * quat.x()) + (quat.y() * quat.z())),
-//			1 - (2 * ((quat.x() * quat.x()) + (quat.y() * quat.y()))));
-//	res(1) = asin(2 * ((quat.w() * quat.y()) - (quat.z() * quat.x())));
-//	res(2) = atan2(2 * ((quat.w() * quat.z()) + (quat.x() * quat.y())),
-//			1 - (2 * ((quat.y() * quat.y()) + (quat.z() * quat.z()))));
-	res(2) = atan2(-2*(quat.y()*quat.z() - quat.w()*quat.x()),quat.w()*quat.w() - quat.x()*quat.x() - quat.y()*quat.y() + quat.z()*quat.z());
-	res(1) = asin ( 2*(quat.x()*quat.z() + quat.w()*quat.y()) );
-
-	res(0) = atan2( -2*(quat.x()*quat.y() - quat.w()*quat.z()), quat.w()*quat.w() + quat.x()*quat.x() - quat.y()*quat.y() - quat.z()*quat.z());
-}
-void PositionController::toQuaternion(Eigen::Vector3f const & rpy,
-		Eigen::Quaternionf& res) const {
-	res.x() = (sin(rpy.x() / 2) * cos(rpy.y() / 2) * cos(rpy.z() / 2))
-			- (cos(rpy.x() / 2) * sin(rpy.y() / 2) * sin(rpy.z() / 2));
-	res.y() = (cos(rpy.x() / 2) * sin(rpy.y() / 2) * cos(rpy.z() / 2))
-			+ (sin(rpy.x() / 2) * cos(rpy.y() / 2) * sin(rpy.z() / 2));
-	res.z() = (cos(rpy.x() / 2) * cos(rpy.y() / 2) * sin(rpy.z() / 2))
-			- (sin(rpy.x() / 2) * sin(rpy.y() / 2) * cos(rpy.z() / 2));
-	res.w() = (cos(rpy.x() / 2) * cos(rpy.y() / 2) * cos(rpy.z() / 2))
-			+ (sin(rpy.x() / 2) * sin(rpy.y() / 2) * sin(rpy.z() / 2));
-}
 
 
 //this macro should appear only once per library

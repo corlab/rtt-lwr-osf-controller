@@ -1,5 +1,9 @@
 % function experiment_analysis()
-
+    %this matlab file plots data logged by one of the following ops files:
+    % - full_controller_boris_base.ops
+    % - full_controller_boris_base2.ops
+    % - full_controller_boris_base_normal.ops
+    
     clc;
     close all;
     clear all;
@@ -7,7 +11,7 @@
     taskSpaceDim = 3; %for Translation only
     taskSpaceDim = 6; %for Translation and Orientation
     numjoints = 7;
-    [report  skip]  = getOrocosDataStruct(['/home/ndehio/reports.dat'], numjoints, taskSpaceDim);
+    [report  skip]  = getOrocosDataStruct(['/home/nde/reports.dat'], numjoints, taskSpaceDim);
     
     
     mystarttime = 0.0;
@@ -39,13 +43,14 @@
     pCur=plot(report.timestampsArea, report.curCartPosTask(idxArea,2), '-b');
     ylabel('y axis [m]')
     xlim(xLimit)
-    ylim([-0.15, 0.15])
+    ylim([0.0, 0.7])
     subplot(3,1,3)
     hold all
     pDes=plot(report.timestampsArea, report.desCartPosTask(idxArea,3), '-r');
     pCur=plot(report.timestampsArea, report.curCartPosTask(idxArea,3), '-b');
     ylabel('z axis [m]')
     xlim(xLimit)
+    ylim([0.7, 0.9])
     xlabel('Time [sec]')
     legend([pDes,pCur],'desired', 'current')
     
@@ -74,35 +79,35 @@
         xlabel('Time [sec]')
         legend([pDes,pCur],'desired', 'current')
         
-        fig=figure();
-        hold all;
-        subplot(4,1,1)
-        hold all
-        title('End-Effector orientational position (Quaternion)')
-        pDes=plot(report.timestampsArea, report.desCartPosTaskQuat(idxArea,1), '-r');
-        pCur=plot(report.timestampsArea, report.curCartPosTaskQuat(idxArea,1), '-b');
-        ylabel('x')
-        xlim(xLimit)
-        subplot(4,1,2)
-        hold all
-        pDes=plot(report.timestampsArea, report.desCartPosTaskQuat(idxArea,2), '-r');
-        pCur=plot(report.timestampsArea, report.curCartPosTaskQuat(idxArea,2), '-b');
-        ylabel('y')
-        xlim(xLimit)
-        subplot(4,1,3)
-        hold all
-        pDes=plot(report.timestampsArea, report.desCartPosTaskQuat(idxArea,3), '-r');
-        pCur=plot(report.timestampsArea, report.curCartPosTaskQuat(idxArea,3), '-b');
-        ylabel('z')
-        xlim(xLimit)
-        subplot(4,1,4)
-        hold all
-        pDes=plot(report.timestampsArea, report.desCartPosTaskQuat(idxArea,4), '-r');
-        pCur=plot(report.timestampsArea, report.curCartPosTaskQuat(idxArea,4), '-b');
-        ylabel('w')
-        xlim(xLimit)
-        xlabel('Time [sec]')
-        legend([pDes,pCur],'desired', 'current')
+%         fig=figure();
+%         hold all;
+%         subplot(4,1,1)
+%         hold all
+%         title('End-Effector orientational position (Quaternion)')
+%         pDes=plot(report.timestampsArea, report.desCartPosTaskQuat(idxArea,1), '-r');
+%         pCur=plot(report.timestampsArea, report.curCartPosTaskQuat(idxArea,1), '-b');
+%         ylabel('x')
+%         xlim(xLimit)
+%         subplot(4,1,2)
+%         hold all
+%         pDes=plot(report.timestampsArea, report.desCartPosTaskQuat(idxArea,2), '-r');
+%         pCur=plot(report.timestampsArea, report.curCartPosTaskQuat(idxArea,2), '-b');
+%         ylabel('y')
+%         xlim(xLimit)
+%         subplot(4,1,3)
+%         hold all
+%         pDes=plot(report.timestampsArea, report.desCartPosTaskQuat(idxArea,3), '-r');
+%         pCur=plot(report.timestampsArea, report.curCartPosTaskQuat(idxArea,3), '-b');
+%         ylabel('z')
+%         xlim(xLimit)
+%         subplot(4,1,4)
+%         hold all
+%         pDes=plot(report.timestampsArea, report.desCartPosTaskQuat(idxArea,4), '-r');
+%         pCur=plot(report.timestampsArea, report.curCartPosTaskQuat(idxArea,4), '-b');
+%         ylabel('w')
+%         xlim(xLimit)
+%         xlabel('Time [sec]')
+%         legend([pDes,pCur],'desired', 'current')
     end
     
     fig=figure();
@@ -133,12 +138,62 @@
     
     fig=figure();
     hold all;
+    subplot(3,1,1)
+    hold all
+    title('End-Effector translational force per axis')
+    p=plot(report.timestampsArea, report.cmdCartForce(idxArea,1), '-r');
+    ylabel('x axis [Nm]')
+    xlim(xLimit)
+    ylim([-20, +20])
+    subplot(3,1,2)
+    hold all
+    p=plot(report.timestampsArea, report.cmdCartForce(idxArea,2), '-r');
+    ylabel('y axis [Nm]')
+    xlim(xLimit)
+    ylim([-20, +20])
+    subplot(3,1,3)
+    hold all
+    p=plot(report.timestampsArea, report.cmdCartForce(idxArea,3), '-r');
+    ylabel('z axis [Nm]')
+    xlim(xLimit)
+    ylim([-20, +20])
+    xlabel('Time [sec]')
+    legend([p],'command')
+    
+    if taskSpaceDim == 6
+        fig=figure();
+        hold all;
+        subplot(3,1,1)
+        hold all
+        title('End-Effector orientational force')
+        p=plot(report.timestampsArea, report.cmdCartForce(idxArea,4), '-r');
+        ylabel('x axis')
+        xlim(xLimit)
+        ylim([-20, +20])
+        subplot(3,1,2)
+        hold all
+        p=plot(report.timestampsArea, report.cmdCartForce(idxArea,5), '-r');
+        ylabel('y axis')
+        xlim(xLimit)
+        ylim([-20, +20])
+        subplot(3,1,3)
+        hold all
+        p=plot(report.timestampsArea, report.cmdCartForce(idxArea,6), '-r');
+        ylabel('z axis')
+        xlim(xLimit)
+        ylim([-20, +20])
+        xlabel('Time [sec]')
+        legend([p],'command')
+    end
+    
+    fig=figure();
+    hold all;
     title('End-Effector position in 3D')
     pDes=plot3(report.desCartPosTask(idxArea,1),report.desCartPosTask(idxArea,2),report.desCartPosTask(idxArea,3),'-r');
     pCur=plot3(report.curCartPosTask(idxArea,1),report.curCartPosTask(idxArea,2),report.curCartPosTask(idxArea,3),'-b');
-    xlim([-0.70, -0.40])
-    ylim([-0.15, +0.15])
-    zlim([+0.40, +0.60])
+%     xlim([-0.70, -0.40])
+%     ylim([-0.15, +0.15])
+%     zlim([+0.40, +0.60])
     xlabel('x axis')
     ylabel('y axis')
     zlabel('z axis')

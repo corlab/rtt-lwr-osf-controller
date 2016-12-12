@@ -1,5 +1,5 @@
-/* Author: Milad Malekzadeh
- * Date:   16 August 2016
+/* Author: Niels Dehio
+ * Date:   07 December 2016
  *
  * Description:
  */
@@ -20,9 +20,9 @@
 #include <kdl/frames.hpp>
 
 
-class TrajectoryGenerator: public RTT::TaskContext {
+class TrajectoryGeneratorBoris: public RTT::TaskContext {
 public:
-    TrajectoryGenerator(std::string const & name);
+    TrajectoryGeneratorBoris(std::string const & name);
 
     // RTT::TaskContext methods that are needed for any standard component and
     // should be implemented by user
@@ -34,24 +34,18 @@ public:
 
     // call before preparePorts()
 	void setTranslationOnly(const bool translationOnly);
-    void setRadius(float r);
-    void setWaitTime(double wTime);
     void preparePorts();
     double getSimulationTime();
 
     void getPosition(double time, Eigen::VectorXf & ret);
     void getVelocity(double time, Eigen::VectorXf & ret);
     void getAcceleration(double time, Eigen::VectorXf & ret);
-
     void getPositionTranslation(double time, Eigen::VectorXf & ret);
     void getVelocityTranslation(double time, Eigen::VectorXf & ret);
     void getAccelerationTranslation(double time, Eigen::VectorXf & ret);
-
-    void getPositionOrientation(double time, Eigen::VectorXf & ret);
-    void getVelocityOrientation(double time, Eigen::VectorXf & ret);
-    void getAccelerationOrientation(double time, Eigen::VectorXf & ret);
-
-    void setCenter(double x, double y,double z);
+    void setObjectCenter(double x, double y,double z);
+    void setObjectSize(double size);
+    void displayStatus();
 
 private:
     // Declare input ports and their datatypes
@@ -73,13 +67,11 @@ private:
     bool portsArePrepared;
     bool sendTranslationOnly;
     unsigned int TaskSpaceDimension;
-    float radius;
     RTT::os::TimeService::ticks start_ticks;
-    double start_time, wait_time, current_time, time_diff;
-    double _timescale;
-    Eigen::MatrixXf BoardRot;
-    Eigen::VectorXf BoardTransl;
-    Eigen::Vector3f TipOrientationEulerZYXAngle, TipOrientationAxisAngle;
-    Eigen::VectorXf tmp;
+    double start_time, current_time, time_diff;
+    double timescale;
+    Eigen::Vector3f TipOrientationEulerZYXAngleLeft, TipOrientationEulerZYXAngleRight, TipOrientationAxisAngleLeft, TipOrientationAxisAngleRight;
+    Eigen::Vector3f objectcenter;
+    float factor, objectsize;
 };
 

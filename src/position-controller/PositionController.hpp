@@ -33,13 +33,26 @@ public:
 
     void setDOFsize(unsigned int DOFsize);
     void setConstrainedVersionMode(bool useConstrainedVersion);
+    void setTaskSpaceDimension(const unsigned int TaskSpaceDimension);
     void setTranslationOnly(const bool translationOnly); // call before preparePorts()
     void setGains(float kp, float kd);
     void setGainsOrientation(float kp, float kd);
+    void computeTranslationError(
+            Eigen::Vector3f const & desiredPosition,
+            Eigen::Vector3f const & currentPosition,
+            Eigen::Vector3f const & desiredVelocity,
+            Eigen::Vector3f const & currentVelocity,
+            Eigen::Vector3f & errorPosition,
+            Eigen::Vector3f & errorVelocity);
+    void computeOrientationError(
+            Eigen::Vector3f const & axisangle_desiredPosition,
+            Eigen::Vector3f const & axisangle_currentPosition,
+            Eigen::Vector3f const & axisangle_desiredVelocity,
+            Eigen::Vector3f const & axisangle_currentVelocity,
+            Eigen::Vector3f & errorPosition,
+            Eigen::Vector3f & errorVelocity);
     void preparePorts();
     void displayStatus();
-    void toEulerAngles(Eigen::Vector3f& res, Eigen::Quaternionf const & quat) const;
-    void toQuaternion(Eigen::Vector3f const & rpy, Eigen::Quaternionf& res) const;
 
 private:
     // Declare input ports and their datatypes
@@ -61,6 +74,7 @@ private:
 
     // Declare output ports and their datatypes
     RTT::OutputPort<rstrt::dynamics::JointTorques> out_torques_port;
+    RTT::OutputPort<Eigen::VectorXf> out_force_port;
 
     // Data flow:
     RTT::FlowStatus in_desiredTaskSpacePosition_flow;
@@ -97,18 +111,19 @@ private:
     Eigen::MatrixXf in_constraintC_var;
 
     rstrt::dynamics::JointTorques out_torques_var;
+    Eigen::VectorXf out_force_var;
 
-    Eigen::AngleAxisf rotx, roty, rotz;
     Eigen::Vector4f quaternion_desired, quaternion_current, quaternion_current_conj, quaternion_diff;
     Eigen::Quaternionf quat_target,quat_current,quat_diff;
-    Eigen::Vector3f error_o_pos, error_o_vel, euler_temp;
-    Eigen::Vector3f axisangle_temp;
-    Eigen::VectorXf error_pos, error_vel;
+    Eigen::Vector3f errorTranslationPosition, errorTranslationVelocity;
+    Eigen::Vector3f errorOrientationPosition, errorOrientationVelocity;
+    Eigen::VectorXf errorPosition, errorVelocity;
+    Eigen::Vector3f desiredPosition, currentPosition, desiredVelocity, currentVelocity;
 
     unsigned int DOFsize;
     bool receiveTranslationOnly;
     unsigned int TaskSpaceDimension;
-    float gainP, gainD, gainP_o, gainD_o;
+    float gainTranslationP, gainTranslationD, gainOrientationP, gainOrientationD;
     bool portsArePrepared;
     bool useConstrainedVersion;
     Eigen::VectorXf ref_Acceleration, constraintForce;

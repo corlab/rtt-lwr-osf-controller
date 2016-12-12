@@ -46,24 +46,26 @@ include(${OROCOS-RTT_USE_FILE_PATH}/UseOROCOS-RTT.cmake)
 #
 # orocos_component(${CMAKE_PROJECT_NAME} simple-rtt-component.hpp simple-rtt-component.cpp) # ...you may add multiple source files
 orocos_component(${CMAKE_PROJECT_NAME}
-                                        ${PROJECT_SOURCE_DIR}/torque-superposer/TorqueSuperimposer.hpp
-                                        ${PROJECT_SOURCE_DIR}/torque-superposer/TorqueSuperimposer.cpp
-                                        ${PROJECT_SOURCE_DIR}/nullspace-controller/NullspaceController.hpp
-                                        ${PROJECT_SOURCE_DIR}/nullspace-controller/NullspaceController.cpp
-                                        ${PROJECT_SOURCE_DIR}/position-controller/PositionController.hpp
-                                        ${PROJECT_SOURCE_DIR}/position-controller/PositionController.cpp
-                                        ${PROJECT_SOURCE_DIR}/constrained-force-controller/ConstrainedForceController.hpp
-                                        ${PROJECT_SOURCE_DIR}/constrained-force-controller/ConstrainedForceController.cpp
-                                        ${PROJECT_SOURCE_DIR}/trajectory-generator/TrajectoryGenerator.hpp
-                                        ${PROJECT_SOURCE_DIR}/trajectory-generator/TrajectoryGenerator.cpp
-                                        ${PROJECT_SOURCE_DIR}/joint-position-ctrl/JointPositionCtrl.hpp
-                                        ${PROJECT_SOURCE_DIR}/joint-position-ctrl/JointPositionCtrl.cpp
-                                        ${PROJECT_SOURCE_DIR}/torque-transition/TorqueTransition.hpp
-                                        ${PROJECT_SOURCE_DIR}/torque-transition/TorqueTransition.cpp
-                                        ${PROJECT_SOURCE_DIR}/position-controller/QuaternionHelper.hpp
-                                        ${PROJECT_SOURCE_DIR}/position-controller/QuaternionHelper.cpp
-                                        ${PROJECT_SOURCE_DIR}/reaching-task/ReachingTask.hpp
-                                        ${PROJECT_SOURCE_DIR}/reaching-task/ReachingTask.cpp
+                                        ${PROJECT_SOURCE_DIR}/src/torque-superposer/TorqueSuperimposer.hpp
+                                        ${PROJECT_SOURCE_DIR}/src/torque-superposer/TorqueSuperimposer.cpp
+                                        ${PROJECT_SOURCE_DIR}/src/nullspace-controller/NullspaceController.hpp
+                                        ${PROJECT_SOURCE_DIR}/src/nullspace-controller/NullspaceController.cpp
+                                        ${PROJECT_SOURCE_DIR}/src/position-controller/PositionController.hpp
+                                        ${PROJECT_SOURCE_DIR}/src/position-controller/PositionController.cpp
+                                        ${PROJECT_SOURCE_DIR}/src/constrained-force-controller/ConstrainedForceController.hpp
+                                        ${PROJECT_SOURCE_DIR}/src/constrained-force-controller/ConstrainedForceController.cpp
+                                        ${PROJECT_SOURCE_DIR}/src/trajectory-generator/TrajectoryGenerator.hpp
+                                        ${PROJECT_SOURCE_DIR}/src/trajectory-generator/TrajectoryGenerator.cpp
+                                        ${PROJECT_SOURCE_DIR}/src/trajectory-generatorBoris/TrajectoryGeneratorBoris.hpp
+                                        ${PROJECT_SOURCE_DIR}/src/trajectory-generatorBoris/TrajectoryGeneratorBoris.cpp
+                                        ${PROJECT_SOURCE_DIR}/src/joint-position-ctrl/JointPositionCtrl.hpp
+                                        ${PROJECT_SOURCE_DIR}/src/joint-position-ctrl/JointPositionCtrl.cpp
+                                        ${PROJECT_SOURCE_DIR}/src/torque-transition/TorqueTransition.hpp
+                                        ${PROJECT_SOURCE_DIR}/src/torque-transition/TorqueTransition.cpp
+                                        ${PROJECT_SOURCE_DIR}/src/position-controller/QuaternionHelper.hpp
+                                        ${PROJECT_SOURCE_DIR}/src/position-controller/QuaternionHelper.cpp
+                                        ${PROJECT_SOURCE_DIR}/src/reaching-task/ReachingTask.hpp
+                                        ${PROJECT_SOURCE_DIR}/src/reaching-task/ReachingTask.cpp
 ) # ...you may add multiple source files
 #
 # You may add multiple orocos_component statements.

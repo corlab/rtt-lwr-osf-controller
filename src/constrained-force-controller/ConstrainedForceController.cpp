@@ -9,7 +9,7 @@
 #include <rtt/Component.hpp> // needed for the macro at the end of this file
 
 ConstrainedForceController::ConstrainedForceController(std::string const & name) :
-		RTT::TaskContext(name), receiveTranslationOnly(true) {
+        RTT::TaskContext(name) {
 	//prepare operations
 	addOperation("setDOFsize", &ConstrainedForceController::setDOFsize, this).doc(
 			"set DOF size");
@@ -19,24 +19,12 @@ ConstrainedForceController::ConstrainedForceController(std::string const & name)
 
     addOperation("preparePorts", &ConstrainedForceController::preparePorts, this).doc(
         				"preparePorts");
+    addOperation("setCstrSpaceDimension", &ConstrainedForceController::setCstrSpaceDimension,
+            this, RTT::ClientThread).doc(
+            "set CstrSpaceDimension");
 
-    addOperation("setTranslationOnly", &ConstrainedForceController::setTranslationOnly,
-        			this, RTT::ClientThread).doc(
-        			"set translation only, or use also orientation");
-
-	setTranslationOnly(true);
-    current_lambda = Eigen::VectorXf::Zero(TaskSpaceDimension);
+    current_lambda = Eigen::VectorXf::Zero(CstrSpaceDimension);
 	portsArePrepared = false;
-}
-
-void ConstrainedForceController::setTranslationOnly(const bool translationOnly) {
-	receiveTranslationOnly = translationOnly;
-	if(receiveTranslationOnly){
-		TaskSpaceDimension = 3;
-	}
-	else{
-		TaskSpaceDimension = 6;
-	}
 }
 
 bool ConstrainedForceController::configureHook() {
@@ -128,8 +116,12 @@ void ConstrainedForceController::setDOFsize(unsigned int DOFsize) {
 	this->DOFsize = DOFsize;
 }
 
+void ConstrainedForceController::setCstrSpaceDimension(const unsigned int CstrSpaceDimension) {
+    this->CstrSpaceDimension = CstrSpaceDimension;
+}
+
 void ConstrainedForceController::setLambda(Eigen::VectorXf new_lambda) {
-    assert(new_lambda.size() == TaskSpaceDimension);
+    assert(new_lambda.size() == CstrSpaceDimension);
     this->current_lambda = new_lambda;
 }
 
@@ -152,13 +144,13 @@ void ConstrainedForceController::preparePorts() {
 	ports()->addPort(in_robotstatus_port);
 	in_robotstatus_flow = RTT::NoData;
 
-    in_lambda_des_var = Eigen::VectorXf(TaskSpaceDimension);
+    in_lambda_des_var = Eigen::VectorXf(CstrSpaceDimension);
 	in_lambda_des_port.setName("in_lambda_des_port");
 	in_lambda_des_port.doc("Input port for reading desired lambdas");
 	ports()->addPort(in_lambda_des_port);
 	in_lambda_des_flow = RTT::NoData;
 
-	in_jacobian_c_var = Eigen::MatrixXf(TaskSpaceDimension, DOFsize);
+    in_jacobian_c_var = Eigen::MatrixXf(CstrSpaceDimension, DOFsize);
     in_jacobian_c_port.setName("in_jacobian_c_port");
 	in_jacobian_c_port.doc("Input port for reading jacobian_c values");
 	ports()->addPort(in_jacobian_c_port);
@@ -206,7 +198,7 @@ void ConstrainedForceController::preparePorts() {
 }
 
 void ConstrainedForceController::displayStatus(){
-    RTT::log(RTT::Info) << "in_lambda_des_var angles \n" << in_lambda_des_var << RTT::endlog();
+    RTT::log(RTT::Info) << "in_lambda_des_var \n" << in_lambda_des_var << RTT::endlog();
     RTT::log(RTT::Info) << "in_jacobian_c_var \n" << in_jacobian_c_var << RTT::endlog();
     RTT::log(RTT::Info) << "in_inertia_var \n" << in_inertia_var << RTT::endlog();
     RTT::log(RTT::Info) << "in_inertia_c_var \n" << in_inertia_c_var << RTT::endlog();

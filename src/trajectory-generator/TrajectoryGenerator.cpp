@@ -13,13 +13,15 @@ TrajectoryGenerator::TrajectoryGenerator(std::string const & name) : RTT::TaskCo
     addOperation("preparePorts", &TrajectoryGenerator::preparePorts, this).doc("prepare ports");
     addOperation("setTranslationOnly", &TrajectoryGenerator::setTranslationOnly, this, RTT::ClientThread).doc("set translation only, or use also orientation");
     addOperation("setRadius", &TrajectoryGenerator::setRadius, this, RTT::ClientThread).doc("set radius");
-    addOperation("setCenter", &TrajectoryGenerator::setCenter,this,RTT::ClientThread);
+    addOperation("setCenter", &TrajectoryGenerator::setCenter,this,RTT::ClientThread).doc("set center");
+    addOperation("setWaitTime", &TrajectoryGenerator::setWaitTime,this,RTT::ClientThread).doc("set wait time");
     addProperty("radius",radius);
 
     //other stuff
     portsArePrepared = false;
 
     start_time = 0.0;
+    wait_time = 0.0;
     _timescale = 0.6;
 
     BoardRot = Eigen::MatrixXf::Zero(3,3);
@@ -94,6 +96,11 @@ void TrajectoryGenerator::setRadius(float r) {
     radius = r;
 }
 
+void TrajectoryGenerator::setWaitTime(double wTime) {//use this function with wTime=infinity for reaching to a constant pose only
+    assert(wTime >= 0);
+    wait_time = wTime;
+}
+
 bool TrajectoryGenerator::configureHook() {
     return true;
 }
@@ -105,8 +112,10 @@ bool TrajectoryGenerator::startHook() {
 
 void TrajectoryGenerator::updateHook() {
     current_time = this->getSimulationTime();
-    time_diff = this->current_time - this->start_time;
-    //time_diff = 0.0; //use this for reaching to a constant pose only
+    time_diff = this->current_time - this->start_time - this->wait_time;
+    if(time_diff < 0.0){
+        time_diff = 0.0;
+    }
 
     if(sendTranslationOnly){
         this->getPositionTranslation(time_diff, out_desiredTaskSpacePosition_var);
@@ -118,7 +127,11 @@ void TrajectoryGenerator::updateHook() {
         this->getVelocity(time_diff, out_desiredTaskSpaceVelocity_var);
         this->getAcceleration(time_diff, out_desiredTaskSpaceAcceleration_var);
     }
-    //std::cout<<out_desiredTaskSpacePosition_var<<"\n";
+
+    if(this->current_time - this->start_time < this->wait_time){
+        out_desiredTaskSpaceVelocity_var.setZero();
+        out_desiredTaskSpaceAcceleration_var.setZero();
+    }
 
     out_desiredTaskSpacePosition_port.write(out_desiredTaskSpacePosition_var);
     out_desiredTaskSpaceVelocity_port.write(out_desiredTaskSpaceVelocity_var);
@@ -167,8 +180,8 @@ double TrajectoryGenerator::getSimulationTime() {
 }
 
 void TrajectoryGenerator::getPosition(double time, Eigen::VectorXf & ret) {
-    tmp(0) = radius * cos(_timescale * (time-start_time));
-    tmp(1) = radius * sin(_timescale * (time-start_time));
+    tmp(0) = radius * cos(_timescale * time);
+    tmp(1) = radius * sin(_timescale * time);
     tmp(2) = 0.0;
     tmp = BoardRot * tmp + BoardTransl;
 
@@ -185,8 +198,8 @@ void TrajectoryGenerator::getPosition(double time, Eigen::VectorXf & ret) {
 
 
 void TrajectoryGenerator::getVelocity(double time, Eigen::VectorXf & ret) {
-    tmp(0) = radius * (-1)*sin(_timescale * (time-start_time));
-    tmp(1) = radius * cos(_timescale * (time-start_time));
+    tmp(0) = radius * (-1)*sin(_timescale * time);
+    tmp(1) = radius * cos(_timescale * time);
     tmp(2) = 0.0;
     tmp = BoardRot * tmp;
 
@@ -204,8 +217,8 @@ void TrajectoryGenerator::getVelocity(double time, Eigen::VectorXf & ret) {
 
 
 void TrajectoryGenerator::getAcceleration(double time, Eigen::VectorXf & ret) {
-    tmp(0) = radius * (-1)*cos(_timescale * (time-start_time));
-    tmp(1) = radius * (-1)*sin(_timescale * (time-start_time));
+    tmp(0) = radius * (-1)*cos(_timescale * time);
+    tmp(1) = radius * (-1)*sin(_timescale * time);
     tmp(2) = 0.0;
     tmp = BoardRot * tmp;
 //    std::cout<<tmp<<"\n--------------------------------------\n";
@@ -222,22 +235,22 @@ void TrajectoryGenerator::getAcceleration(double time, Eigen::VectorXf & ret) {
 }
 
 void TrajectoryGenerator::getPositionTranslation(double time, Eigen::VectorXf & ret) {
-    ret(0) = radius * cos(_timescale * (time-start_time));
-    ret(1) = radius * sin(_timescale * (time-start_time));
+    ret(0) = radius * cos(_timescale * time);
+    ret(1) = radius * sin(_timescale * time);
     ret(2) = 0.0;
     ret = BoardRot * ret + BoardTransl;
 }
 
 void TrajectoryGenerator::getVelocityTranslation(double time, Eigen::VectorXf & ret) {
-    ret(0) = radius * (-1)*sin(_timescale * (time-start_time));
-    ret(1) = radius * cos(_timescale * (time-start_time));
+    ret(0) = radius * (-1)*sin(_timescale * time);
+    ret(1) = radius * cos(_timescale * time);
     ret(2) = 0.0;
     ret = BoardRot * ret;
 }
 
 void TrajectoryGenerator::getAccelerationTranslation(double time, Eigen::VectorXf & ret) {
-    ret(0) = radius * (-1)*cos(_timescale * (time-start_time));
-    ret(1) = radius * (-1)*sin(_timescale * (time-start_time));
+    ret(0) = radius * (-1)*cos(_timescale * time);
+    ret(1) = radius * (-1)*sin(_timescale * time);
     ret(2) = 0.0;
     ret = BoardRot * ret;
 }
