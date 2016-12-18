@@ -10,6 +10,7 @@
 
 ReachingTask::ReachingTask(std::string const & name) : RTT::TaskContext(name) {
     //prepare operations
+    addOperation("setTaskSpaceDimension", &ReachingTask::setTaskSpaceDimension,this, RTT::ClientThread).doc("set TaskSpaceDimension");
     addOperation("setTranslationOnly", &ReachingTask::setTranslationOnly,this, RTT::ClientThread).doc("set translation only, or use also orientation");
     addOperation("setReaching", &ReachingTask::setReaching, this, RTT::ClientThread).doc("set reaching");
     addOperation("setReachingPosition", &ReachingTask::setReachingPosition, this, RTT::ClientThread).doc("set reaching position");
@@ -53,12 +54,11 @@ void ReachingTask::cleanupHook() {
     portsArePrepared = false;
 }
 
+void ReachingTask::setTaskSpaceDimension(const unsigned int TaskSpaceDimension) {
+    this->TaskSpaceDimension = TaskSpaceDimension;
+}
+
 void ReachingTask::setTranslationOnly(const bool translationOnly) {
-    if (translationOnly) {
-        TaskSpaceDimension = 3;
-    } else {
-        TaskSpaceDimension = 6;
-    }
 }
 
 void ReachingTask::setReaching(Eigen::VectorXf const & reachingtarget){
@@ -67,20 +67,21 @@ void ReachingTask::setReaching(Eigen::VectorXf const & reachingtarget){
 }
 
 void ReachingTask::setReachingPosition(float const x, float const y, float const z){
+    assert(TaskSpaceDimension==3 || TaskSpaceDimension==6);
     out_reachingposition_var(0) = x;
     out_reachingposition_var(1) = y;
     out_reachingposition_var(2) = z;
 }
 
 void ReachingTask::setReachingOrientationAxisAngle(float const x, float const y, float const z){
-    assert(TaskSpaceDimension == 6);
+    assert(TaskSpaceDimension==6);
     out_reachingposition_var(3) = x;
     out_reachingposition_var(4) = y;
     out_reachingposition_var(5) = z;
 }
 
 void ReachingTask::setReachingOrientationEulerZYXAngle(float const alpha, float const beta, float const gamma){
-    assert(TaskSpaceDimension == 6);
+    assert(TaskSpaceDimension==6);
     KDL::Rotation r;
     KDL::Vector kdl_axisangle;
     r = KDL::Rotation::EulerZYX(alpha, beta, gamma);
@@ -89,10 +90,6 @@ void ReachingTask::setReachingOrientationEulerZYXAngle(float const alpha, float 
     out_reachingposition_var(3) = kdl_axisangle.x();
     out_reachingposition_var(4) = kdl_axisangle.y();
     out_reachingposition_var(5) = kdl_axisangle.z();
-
-//    RTT::log(RTT::Info) << "kdl_axisangle.x() " << kdl_axisangle.x() << RTT::endlog();
-//    RTT::log(RTT::Info) << "kdl_axisangle.y() " << kdl_axisangle.y() << RTT::endlog();
-//    RTT::log(RTT::Info) << "kdl_axisangle.z() " << kdl_axisangle.z() << RTT::endlog();
 }
 
 void ReachingTask::preparePorts(){

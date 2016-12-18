@@ -129,11 +129,11 @@ bool PositionController::startHook() {
                 << RTT::endlog();
         return false;
     }
-	if (!out_torques_port.connected()) {
-		RTT::log(RTT::Info) << "out_torques_port not connected"
-				<< RTT::endlog();
-		return false;
-	}
+//	if (!out_torques_port.connected()) {
+//		RTT::log(RTT::Info) << "out_torques_port not connected"
+//				<< RTT::endlog();
+//		return false;
+//	}
 	return true;
 }
 
@@ -176,24 +176,35 @@ void PositionController::updateHook() {
 		return;
 	}
 
-    desiredPosition = in_desiredTaskSpacePosition_var.head<3>();
-    currentPosition = in_currentTaskSpacePosition_var.head<3>();
-    desiredVelocity = in_desiredTaskSpaceVelocity_var.head<3>();
-    currentVelocity = in_currentTaskSpaceVelocity_var.head<3>();
-    this->computeTranslationError(desiredPosition, currentPosition, desiredVelocity, currentVelocity,
-                                  errorTranslationPosition, errorTranslationVelocity);
-    errorPosition.head<3>() = gainTranslationP * errorTranslationPosition;
-    errorVelocity.head<3>() = gainTranslationD * errorTranslationVelocity;
+    errorPosition.setZero();
+    errorVelocity.setZero();
+    for(unsigned int i=0; i<numEndEffectors; i++){
+        //in case of a single endeffector one can also use .head<3>()
+        errorTranslationPosition.setZero();
+        errorTranslationVelocity.setZero();
+        desiredPosition = in_desiredTaskSpacePosition_var.segment<3>(6*i);
+        currentPosition = in_currentTaskSpacePosition_var.segment<3>(6*i);
+        desiredVelocity = in_desiredTaskSpaceVelocity_var.segment<3>(6*i);
+        currentVelocity = in_currentTaskSpaceVelocity_var.segment<3>(6*i);
+        this->computeTranslationError(desiredPosition, currentPosition, desiredVelocity, currentVelocity,
+                                      errorTranslationPosition, errorTranslationVelocity);
+        errorPosition.segment<3>(6*i) = gainTranslationP * errorTranslationPosition;
+        errorVelocity.segment<3>(6*i) = gainTranslationD * errorTranslationVelocity;
 
-    if (!receiveTranslationOnly) {
-        desiredPosition = in_desiredTaskSpacePosition_var.tail<3>();
-        currentPosition = in_currentTaskSpacePosition_var.tail<3>();
-        desiredVelocity = in_desiredTaskSpaceVelocity_var.tail<3>();
-        currentVelocity = in_currentTaskSpaceVelocity_var.tail<3>();
-        this->computeOrientationError(desiredPosition, currentPosition, desiredVelocity, currentVelocity,
-                                      errorOrientationPosition, errorOrientationVelocity);
-        errorPosition.tail<3>() = gainOrientationP * errorOrientationPosition;
-        errorVelocity.tail<3>() = gainOrientationD * errorOrientationVelocity;
+
+        if (!receiveTranslationOnly) {
+            //in case of a single endeffector one can also use .tail<3>()
+            errorOrientationPosition.setZero();
+            errorOrientationVelocity.setZero();
+            desiredPosition = in_desiredTaskSpacePosition_var.segment<3>(6*i+3);
+            currentPosition = in_currentTaskSpacePosition_var.segment<3>(6*i+3);
+            desiredVelocity = in_desiredTaskSpaceVelocity_var.segment<3>(6*i+3);
+            currentVelocity = in_currentTaskSpaceVelocity_var.segment<3>(6*i+3);
+            this->computeOrientationError(desiredPosition, currentPosition, desiredVelocity, currentVelocity,
+                                          errorOrientationPosition, errorOrientationVelocity);
+            errorPosition.segment<3>(6*i+3) = gainOrientationP * errorOrientationPosition;
+            errorVelocity.segment<3>(6*i+3) = gainOrientationD * errorOrientationVelocity;
+        }
     }
 
 	// reference acceleration for cartesian task
@@ -215,6 +226,10 @@ void PositionController::updateHook() {
         constraintForce = ((in_jacobian_var*in_constraintM_var.inverse()*in_jacobian_var.transpose()).inverse())*ref_Acceleration+
                           ((in_jacobian_var*in_constraintM_var.inverse()*in_jacobian_var.transpose()).inverse())*(-in_jacobianDot_var*in_robotstatus_var.velocities)+
                           (((in_jacobian_var*in_constraintM_var.inverse()*in_jacobian_var.transpose()).inverse())*in_jacobian_var*in_constraintM_var.inverse()*in_h_var);
+
+//        constraintForce = ((in_jacobian_var*in_constraintM_var.inverse()*in_jacobian_var.transpose()).inverse())*ref_Acceleration+
+//                          (((in_jacobian_var*in_constraintM_var.inverse()*in_jacobian_var.transpose()).inverse())*in_jacobian_var*in_constraintM_var.inverse()*in_h_var);
+//        constraintForce = ((in_jacobian_var*in_constraintM_var.inverse()*in_jacobian_var.transpose()).inverse())*ref_Acceleration;
     //    constraintForce = ref_Acceleration;
     }
 
@@ -248,6 +263,22 @@ void PositionController::setTaskSpaceDimension(const unsigned int TaskSpaceDimen
     errorVelocity = Eigen::VectorXf::Zero(TaskSpaceDimension);
     ref_Acceleration = Eigen::VectorXf::Zero(TaskSpaceDimension);
     constraintForce = Eigen::VectorXf::Zero(TaskSpaceDimension);
+
+    if (receiveTranslationOnly && TaskSpaceDimension==3) {
+        numEndEffectors = 1;
+    }
+    else if (receiveTranslationOnly && TaskSpaceDimension==6) {
+        numEndEffectors = 2;
+    }
+    else if (!receiveTranslationOnly && TaskSpaceDimension==6) {
+        numEndEffectors = 1;
+    }
+    else if (!receiveTranslationOnly && TaskSpaceDimension==12) {
+        numEndEffectors = 2;
+    }
+    else {
+        numEndEffectors = 0; //TODO this case should not happen...
+    }
 }
 
 void PositionController::setTranslationOnly(const bool translationOnly) {
@@ -269,17 +300,17 @@ void PositionController::setGainsOrientation(float kp, float kd) {
 
 
 void PositionController::computeTranslationError(
-        Eigen::Vector3f const & desiredPosition,
-        Eigen::Vector3f const & currentPosition,
-        Eigen::Vector3f const & desiredVelocity,
-        Eigen::Vector3f const & currentVelocity,
-        Eigen::Vector3f & errorPosition,
-        Eigen::Vector3f & errorVelocity) {
-    errorPosition.setZero();
-    errorVelocity.setZero();
+        Eigen::Vector3f const & cart_desiredPosition,
+        Eigen::Vector3f const & cart_currentPosition,
+        Eigen::Vector3f const & cart_desiredVelocity,
+        Eigen::Vector3f const & cart_currentVelocity,
+        Eigen::Vector3f & cart_errorPosition,
+        Eigen::Vector3f & cart_errorVelocity) {
+    cart_errorPosition.setZero();
+    cart_errorVelocity.setZero();
 
-    errorPosition = desiredPosition - currentPosition;
-    errorVelocity = desiredVelocity - currentVelocity;
+    cart_errorPosition = desiredPosition - currentPosition;
+    cart_errorVelocity = desiredVelocity - currentVelocity;
 }
 
 void PositionController::computeOrientationError(
@@ -287,11 +318,11 @@ void PositionController::computeOrientationError(
         Eigen::Vector3f const & axisangle_currentPosition,
         Eigen::Vector3f const & axisangle_desiredVelocity,
         Eigen::Vector3f const & axisangle_currentVelocity,
-        Eigen::Vector3f & errorPosition,
-        Eigen::Vector3f & errorVelocity) {
+        Eigen::Vector3f & axisangle_errorPosition,
+        Eigen::Vector3f & axisangle_errorVelocity) {
 
     //orientation position feedback part
-    errorPosition.setZero();
+    axisangle_errorPosition.setZero();
     qh.AxisAngle2Quaternion(axisangle_desiredPosition, quaternion_desired);
     qh.AxisAngle2Quaternion(axisangle_currentPosition, quaternion_current);
 
@@ -306,7 +337,7 @@ void PositionController::computeOrientationError(
 //    skewmat(2,0) = - quaternion_desired(2);
 //    skewmat(2,1) = + quaternion_desired(1);
 
-//    errorPosition = quaternion_desired(0) * quaternion_current.tail<3>()
+//    axisangle_errorPosition = quaternion_desired(0) * quaternion_current.tail<3>()
 //                 - quaternion_current(0) * quaternion_desired.tail<3>()
 //                 + skewmat * quaternion_current.tail<3>();
 
@@ -322,11 +353,12 @@ void PositionController::computeOrientationError(
         std::cout << " norm(quaternion_diff) = " << n << std::endl;
     }
 
-    qh.LogQuaternion2AxisAngle(quaternion_diff, errorPosition);
-    errorPosition *= 2;
+    qh.LogQuaternion2AxisAngle(quaternion_diff, axisangle_errorPosition);
+    axisangle_errorPosition *= 2;
 
     //TODO orientation velocity feedback part missing
-    errorVelocity.setZero();
+    axisangle_errorVelocity.setZero();
+    axisangle_errorVelocity = axisangle_desiredVelocity - axisangle_currentVelocity;
 }
 
 void PositionController::preparePorts() {
@@ -465,6 +497,9 @@ void PositionController::preparePorts() {
 }
 
 void PositionController::displayStatus() {
+    RTT::log(RTT::Info) << "numEndEffectors \n"
+            << numEndEffectors << RTT::endlog();
+
 	RTT::log(RTT::Info) << "in_robotstatus_var.angles \n"
 			<< in_robotstatus_var.angles << RTT::endlog();
 	RTT::log(RTT::Info) << "in_robotstatus_var.velocities \n"
@@ -500,6 +535,9 @@ void PositionController::displayStatus() {
 			<< RTT::endlog();
 	RTT::log(RTT::Info) << "constraintForce \n" << constraintForce
 			<< RTT::endlog();
+
+    RTT::log(RTT::Info) << "errorPosition \n" << errorPosition << RTT::endlog();
+    RTT::log(RTT::Info) << "errorVelocity \n" << errorVelocity << RTT::endlog();
 
     RTT::log(RTT::Info) << "errorTranslationPosition \n" << errorTranslationPosition << RTT::endlog();
     RTT::log(RTT::Info) << "errorTranslationVelocity \n" << errorTranslationVelocity << RTT::endlog();

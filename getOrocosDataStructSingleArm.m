@@ -1,4 +1,4 @@
-function [report skip]= getOrocosDataStruct1(filename, numjoints, taskSpaceDim)
+function [report skip]= getOrocosDataStructSingleArm(filename, numjoints, taskSpaceDim)
     joints = 1:numjoints;
     taskSpaceArray = 1:taskSpaceDim;
     [data skip] = readOrocosData(filename, 2+0*numjoints+6*taskSpaceDim);

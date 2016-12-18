@@ -15,7 +15,7 @@ JointPositionCtrl::JointPositionCtrl(std::string const & name) : RTT::TaskContex
     addOperation("setDesiredJointAngles", &JointPositionCtrl::setDesiredJointAngles, this).doc("set desired joint angles");
     addOperation("setDesiredJointVelocities", &JointPositionCtrl::setDesiredJointVelocities, this).doc("set desired joint velocities");
     addOperation("computeJointTorques", &JointPositionCtrl::computeJointTorques, this).doc("compute joint torques");
-    addOperation("printCurrentState", &JointPositionCtrl::printCurrentState, this).doc("print current state");
+    addOperation("displayCurrentState", &JointPositionCtrl::displayCurrentState, this).doc("display current state");
 
     //other stuff
     portsArePrepared = false;
@@ -46,6 +46,17 @@ void JointPositionCtrl::updateHook() {
         // handle the situation
     }
 
+    if (in_coriolisAndGravity_port.connected()) {
+        // read data and save state of data into "Flow", which can be "NewData", "OldData" or "NoData".
+        in_coriolisAndGravity_flow = in_coriolisAndGravity_port.read(in_coriolisAndGravity_var);
+    } else {
+        // handle the situation
+    }
+
+    if (in_robotstatus_flow == RTT::NoData){
+        in_coriolisAndGravity_var.setZero();
+    }
+
     // you can handle cases when there is no new data.
     if ((in_robotstatus_flow == RTT::NewData || in_robotstatus_flow == RTT::OldData)) {
 
@@ -61,7 +72,8 @@ void JointPositionCtrl::updateHook() {
 
         assert(desJointVelocities.velocities.rows()==DOFsize);
         assert(desJointVelocities.velocities.cols()==1);
-        this->computeJointTorques(in_robotstatus_var, desJointAngles, desJointVelocities, out_torques_var);
+        this->computeJointTorques(in_robotstatus_var, in_coriolisAndGravity_var, desJointAngles, desJointVelocities, out_torques_var);
+
     } else if ((in_robotstatus_flow == RTT::NoData)) {
         out_torques_var.torques.setZero();
     } else {
@@ -127,6 +139,7 @@ bool JointPositionCtrl::setDesiredJointVelocities(rstrt::kinematics::JointVeloci
 void JointPositionCtrl::preparePorts(){
     if (portsArePrepared){
         ports()->removePort("in_robotstatus_port");
+        ports()->removePort("in_coriolisAndGravity_port");
         ports()->removePort("out_torques_port");
     }
 
@@ -136,6 +149,12 @@ void JointPositionCtrl::preparePorts(){
     in_robotstatus_port.doc("Input port for reading robotstatus values");
     ports()->addPort(in_robotstatus_port);
     in_robotstatus_flow = RTT::NoData;
+
+    in_coriolisAndGravity_var = Eigen::VectorXf::Zero(DOFsize);
+    in_coriolisAndGravity_port.setName("in_coriolisAndGravity_port");
+    in_coriolisAndGravity_port.doc("Input port for reading coriolisAndGravity vector");
+    ports()->addPort(in_coriolisAndGravity_port);
+    in_coriolisAndGravity_flow = RTT::NoData;
 
     //prepare output
     out_torques_var = rstrt::dynamics::JointTorques(DOFsize);
@@ -149,16 +168,18 @@ void JointPositionCtrl::preparePorts(){
 }
 
 void JointPositionCtrl::computeJointTorques(rstrt::robot::JointState const & jointState,
+                                            Eigen::VectorXf const & coriolisAndGravity,
                                             rstrt::kinematics::JointAngles const & desJointAngles,
                                             rstrt::kinematics::JointVelocities const & desJointVelocities,
                                             rstrt::dynamics::JointTorques & jointTorques) {
-    jointTorques.torques = gainP * (desJointAngles.angles - jointState.angles) + gainD * (desJointVelocities.velocities - jointState.velocities);
+    jointTorques.torques = gainP * (desJointAngles.angles - jointState.angles) + gainD * (desJointVelocities.velocities - jointState.velocities) + coriolisAndGravity;
 }
 
-void JointPositionCtrl::printCurrentState(){
+void JointPositionCtrl::displayCurrentState(){
     std::cout << "############## JointPositionCtrl State begin " << std::endl;
     std::cout << " angles " << in_robotstatus_var.angles << std::endl;
     std::cout << " velocities " << in_robotstatus_var.velocities << std::endl;
+    std::cout << " coriolisAndGravity " << in_coriolisAndGravity_var << std::endl;
     std::cout << " desJointAngles " << desJointAngles.angles << std::endl;
     std::cout << " desJointVelocities " << desJointVelocities.velocities << std::endl;
     std::cout << " jointTorques " << out_torques_var.torques << std::endl;

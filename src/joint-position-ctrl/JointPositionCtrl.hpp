@@ -33,23 +33,27 @@ public:
     bool setDesiredJointVelocities(rstrt::kinematics::JointVelocities & desJointVelocities);
     void preparePorts();
     void computeJointTorques(rstrt::robot::JointState const & jointState,
+                             Eigen::VectorXf const & coriolisAndGravity,
                              rstrt::kinematics::JointAngles const & desJointAngles,
                              rstrt::kinematics::JointVelocities const & desJointVelocities,
                              rstrt::dynamics::JointTorques & jointTorques);
-    void printCurrentState();
+    void displayCurrentState();
 
 private:
     // Declare input ports and their datatypes
     RTT::InputPort<rstrt::robot::JointState> in_robotstatus_port;
+    RTT::InputPort<Eigen::VectorXf> in_coriolisAndGravity_port;
 
     // Declare output ports and their datatypes
     RTT::OutputPort<rstrt::dynamics::JointTorques> out_torques_port;
 
     // Data flow:
     RTT::FlowStatus in_robotstatus_flow;
+    RTT::FlowStatus in_coriolisAndGravity_flow;
 
     // variables
     rstrt::robot::JointState in_robotstatus_var;
+    Eigen::VectorXf in_coriolisAndGravity_var;
     rstrt::dynamics::JointTorques out_torques_var;
     unsigned int DOFsize;
     float gainP, gainD;

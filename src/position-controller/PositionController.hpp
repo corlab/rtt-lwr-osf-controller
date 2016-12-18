@@ -38,19 +38,19 @@ public:
     void setGains(float kp, float kd);
     void setGainsOrientation(float kp, float kd);
     void computeTranslationError(
-            Eigen::Vector3f const & desiredPosition,
-            Eigen::Vector3f const & currentPosition,
+            Eigen::Vector3f const & cart_desiredPosition,
+            Eigen::Vector3f const & cart_currentPosition,
             Eigen::Vector3f const & desiredVelocity,
-            Eigen::Vector3f const & currentVelocity,
-            Eigen::Vector3f & errorPosition,
-            Eigen::Vector3f & errorVelocity);
+            Eigen::Vector3f const & cart_cart_currentVelocity,
+            Eigen::Vector3f & cart_errorPosition,
+            Eigen::Vector3f & cart_errorVelocity);
     void computeOrientationError(
             Eigen::Vector3f const & axisangle_desiredPosition,
             Eigen::Vector3f const & axisangle_currentPosition,
             Eigen::Vector3f const & axisangle_desiredVelocity,
             Eigen::Vector3f const & axisangle_currentVelocity,
-            Eigen::Vector3f & errorPosition,
-            Eigen::Vector3f & errorVelocity);
+            Eigen::Vector3f & axisangle_errorPosition,
+            Eigen::Vector3f & axisangle_errorVelocity);
     void preparePorts();
     void displayStatus();
 
@@ -126,6 +126,7 @@ private:
     float gainTranslationP, gainTranslationD, gainOrientationP, gainOrientationD;
     bool portsArePrepared;
     bool useConstrainedVersion;
+    unsigned int numEndEffectors;
     Eigen::VectorXf ref_Acceleration, constraintForce;
     QuaternionHelper qh;
 };

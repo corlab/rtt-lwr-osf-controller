@@ -11,7 +11,7 @@
     taskSpaceDim = 3; %for Translation only
     taskSpaceDim = 6; %for Translation and Orientation
     numjoints = 7;
-    [report  skip]  = getOrocosDataStruct(['/home/nde/reports.dat'], numjoints, taskSpaceDim);
+    [report  skip]  = getOrocosDataStructSingleArm(['/home/nde/reports.dat'], numjoints, taskSpaceDim);
     
     
     mystarttime = 0.0;

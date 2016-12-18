@@ -12,6 +12,7 @@ TrajectoryGeneratorBoris::TrajectoryGeneratorBoris(std::string const & name) : R
     //prepare operations
     addOperation("preparePorts", &TrajectoryGeneratorBoris::preparePorts, this).doc("prepare ports");
     addOperation("setTranslationOnly", &TrajectoryGeneratorBoris::setTranslationOnly, this, RTT::ClientThread).doc("set translation only, or use also orientation");
+    addOperation("setWaitTime", &TrajectoryGeneratorBoris::setWaitTime,this,RTT::ClientThread).doc("set wait time");
     addOperation("setObjectCenter", &TrajectoryGeneratorBoris::setObjectCenter,this,RTT::ClientThread).doc("set object center");
     addOperation("setObjectSize", &TrajectoryGeneratorBoris::setObjectSize,this,RTT::ClientThread).doc("set object size");
     addOperation("displayStatus", &TrajectoryGeneratorBoris::displayStatus,this,RTT::ClientThread).doc("display status");
@@ -33,29 +34,37 @@ TrajectoryGeneratorBoris::TrajectoryGeneratorBoris(std::string const & name) : R
 
     setTranslationOnly(true);
 
-    TipOrientationEulerZYXAngleLeft(0) = 0;
-    TipOrientationEulerZYXAngleLeft(1) = 0;
-    TipOrientationEulerZYXAngleLeft(2) = 0;
-    TipOrientationEulerZYXAngleRight(0) = 0;
-    TipOrientationEulerZYXAngleRight(1) = 0;
-    TipOrientationEulerZYXAngleRight(2) = 0;
+//    TipOrientationEulerZYXAngleLeft(0) = 0;
+//    TipOrientationEulerZYXAngleLeft(1) = 0;
+//    TipOrientationEulerZYXAngleLeft(2) = 0;
+//    TipOrientationEulerZYXAngleRight(0) = 0;
+//    TipOrientationEulerZYXAngleRight(1) = 0;
+//    TipOrientationEulerZYXAngleRight(2) = 0;
 
-    //convert EulerZYX to AxisAngle
-    KDL::Rotation r;
-    KDL::Vector kdl_axisangle;
-    r = KDL::Rotation::EulerZYX(TipOrientationEulerZYXAngleLeft(0), TipOrientationEulerZYXAngleLeft(1), TipOrientationEulerZYXAngleLeft(2));
-    kdl_axisangle = KDL::Vector();
-    kdl_axisangle = r.GetRot();
-    TipOrientationAxisAngleLeft(0) = kdl_axisangle.x();
-    TipOrientationAxisAngleLeft(1) = kdl_axisangle.y();
-    TipOrientationAxisAngleLeft(2) = kdl_axisangle.z();
+//    //convert EulerZYX to AxisAngle
+//    KDL::Rotation r;
+//    KDL::Vector kdl_axisangle;
+//    r = KDL::Rotation::EulerZYX(TipOrientationEulerZYXAngleLeft(0), TipOrientationEulerZYXAngleLeft(1), TipOrientationEulerZYXAngleLeft(2));
+//    kdl_axisangle = KDL::Vector();
+//    kdl_axisangle = r.GetRot();
+//    TipOrientationAxisAngleLeft(0) = kdl_axisangle.x();
+//    TipOrientationAxisAngleLeft(1) = kdl_axisangle.y();
+//    TipOrientationAxisAngleLeft(2) = kdl_axisangle.z();
 
-    r = KDL::Rotation::EulerZYX(TipOrientationEulerZYXAngleRight(0), TipOrientationEulerZYXAngleRight(1), TipOrientationEulerZYXAngleRight(2));
-    kdl_axisangle = KDL::Vector();
-    kdl_axisangle = r.GetRot();
-    TipOrientationAxisAngleLeft(0) = kdl_axisangle.x();
-    TipOrientationAxisAngleLeft(1) = kdl_axisangle.y();
-    TipOrientationAxisAngleLeft(2) = kdl_axisangle.z();
+//    r = KDL::Rotation::EulerZYX(TipOrientationEulerZYXAngleRight(0), TipOrientationEulerZYXAngleRight(1), TipOrientationEulerZYXAngleRight(2));
+//    kdl_axisangle = KDL::Vector();
+//    kdl_axisangle = r.GetRot();
+//    TipOrientationAxisAngleRight(0) = kdl_axisangle.x();
+//    TipOrientationAxisAngleRight(1) = kdl_axisangle.y();
+//    TipOrientationAxisAngleRight(2) = kdl_axisangle.z();
+
+    TipOrientationAxisAngleLeft(0) = 1.57;
+    TipOrientationAxisAngleLeft(1) = 0.0;
+    TipOrientationAxisAngleLeft(2) = 0.0;
+
+    TipOrientationAxisAngleRight(0) =-1.57;
+    TipOrientationAxisAngleRight(1) = 0.0;
+    TipOrientationAxisAngleRight(2) = 0.0;
 }
 
 void TrajectoryGeneratorBoris::setTranslationOnly(const bool translationOnly) {
@@ -66,6 +75,11 @@ void TrajectoryGeneratorBoris::setTranslationOnly(const bool translationOnly) {
 	else{
         TaskSpaceDimension = 12;
 	}
+}
+
+void TrajectoryGeneratorBoris::setWaitTime(double wTime) {//use this function with wTime=infinity for reaching to a constant pose only
+    assert(wTime >= 0);
+    wait_time = wTime;
 }
 
 bool TrajectoryGeneratorBoris::configureHook() {
@@ -79,20 +93,26 @@ bool TrajectoryGeneratorBoris::startHook() {
 
 void TrajectoryGeneratorBoris::updateHook() {
     current_time = this->getSimulationTime();
-    time_diff = this->current_time - this->start_time;
-    //time_diff = 0.0; //use this for reaching to a constant pose only
-
-    if(sendTranslationOnly){
-        this->getPositionTranslation(time_diff, out_desiredTaskSpacePosition_var);
-        this->getVelocityTranslation(time_diff, out_desiredTaskSpaceVelocity_var);
-        this->getAccelerationTranslation(time_diff, out_desiredTaskSpaceAcceleration_var);
+    time_diff = this->current_time - this->start_time - this->wait_time;
+    if(time_diff < 0.0){
+        time_diff = 0.0;
     }
-    else{
+
+//    if(sendTranslationOnly){
+//        this->getPositionTranslation(time_diff, out_desiredTaskSpacePosition_var);
+//        this->getVelocityTranslation(time_diff, out_desiredTaskSpaceVelocity_var);
+//        this->getAccelerationTranslation(time_diff, out_desiredTaskSpaceAcceleration_var);
+//    }
+//    else{
         this->getPosition(time_diff, out_desiredTaskSpacePosition_var);
         this->getVelocity(time_diff, out_desiredTaskSpaceVelocity_var);
         this->getAcceleration(time_diff, out_desiredTaskSpaceAcceleration_var);
+//    }
+
+    if(this->current_time - this->start_time < this->wait_time){
+        out_desiredTaskSpaceVelocity_var.setZero();
+        out_desiredTaskSpaceAcceleration_var.setZero();
     }
-    //std::cout<<out_desiredTaskSpacePosition_var<<"\n";
 
     out_desiredTaskSpacePosition_port.write(out_desiredTaskSpacePosition_var);
     out_desiredTaskSpaceVelocity_port.write(out_desiredTaskSpaceVelocity_var);
@@ -141,16 +161,31 @@ double TrajectoryGeneratorBoris::getSimulationTime() {
 }
 
 void TrajectoryGeneratorBoris::getPosition(double time, Eigen::VectorXf & ret) {
-    ret(0) = objectcenter(0);
-    ret(1) = objectcenter(1) + 0.5*objectsize;
-    ret(2) = objectcenter(2) + factor * ((-1) * cos(timescale * (time-start_time)) +1.0);
-    ret(3) = objectcenter(0);
-    ret(4) = objectcenter(1) - 0.5*objectsize;
-    ret(5) = objectcenter(2) + factor * ((-1) * sin(timescale * (time-start_time)) +1.0);
+    double transition = 5.0;
+    if (time < transition){
+        ret(0) = objectcenter(0);
+        ret(1) = objectcenter(1) + 0.5*objectsize + 0.2 - time / transition * 0.2;
+        ret(2) = objectcenter(2);
+    }
+    else{
+        ret(0) = objectcenter(0);
+        ret(1) = objectcenter(1) + 0.5*objectsize;
+        ret(2) = objectcenter(2) + factor * 0.5 * ((-1) * cos(timescale * (time-transition)) +1.0);
+    }
+    ret(3) = TipOrientationAxisAngleLeft(0);
+    ret(4) = TipOrientationAxisAngleLeft(1);
+    ret(5) = TipOrientationAxisAngleLeft(2);
 
-    ret(6) = TipOrientationAxisAngleLeft(0);
-    ret(7) = TipOrientationAxisAngleLeft(1);
-    ret(8) = TipOrientationAxisAngleLeft(2);
+    if (time < transition){
+        ret(6) = objectcenter(0);
+        ret(7) = objectcenter(1) - 0.5*objectsize - 0.2 + time / transition * 0.2;
+        ret(8) = objectcenter(2);
+    }
+    else{
+        ret(6) = objectcenter(0);
+        ret(7) = objectcenter(1) - 0.5*objectsize;
+        ret(8) = objectcenter(2) + factor * 0.5 * ((-1) * cos(timescale * (time-transition)) +1.0);
+    }
     ret(9) = TipOrientationAxisAngleRight(0);
     ret(10)= TipOrientationAxisAngleRight(1);
     ret(11)= TipOrientationAxisAngleRight(2);
@@ -159,10 +194,10 @@ void TrajectoryGeneratorBoris::getPosition(double time, Eigen::VectorXf & ret) {
 void TrajectoryGeneratorBoris::getVelocity(double time, Eigen::VectorXf & ret) {
     ret(0) = 0;
     ret(1) = 0;
-    ret(2) = 0;
+    ret(2) = 0;//factor * 0.5 * sin(timescale * time);
     ret(3) = 0;
     ret(4) = 0;
-    ret(5) = 0;
+    ret(5) = 0;//factor * 0.5 * sin(timescale * time);
 
     ret(6) = 0;
     ret(7) = 0;
@@ -175,10 +210,10 @@ void TrajectoryGeneratorBoris::getVelocity(double time, Eigen::VectorXf & ret) {
 void TrajectoryGeneratorBoris::getAcceleration(double time, Eigen::VectorXf & ret) {
     ret(0) = 0;
     ret(1) = 0;
-    ret(2) = 0;
+    ret(2) = 0;//factor * 0.5 * cos(timescale * time);
     ret(3) = 0;
     ret(4) = 0;
-    ret(5) = 0;
+    ret(5) = 0;//factor * 0.5 * cos(timescale * time);
 
     ret(6) = 0;
     ret(7) = 0;
@@ -186,33 +221,6 @@ void TrajectoryGeneratorBoris::getAcceleration(double time, Eigen::VectorXf & re
     ret(9) = 0;
     ret(10)= 0;
     ret(11)= 0;
-}
-
-void TrajectoryGeneratorBoris::getPositionTranslation(double time, Eigen::VectorXf & ret) {
-    ret(0) = objectcenter(0);
-    ret(1) = objectcenter(1) + 0.5*objectsize;
-    ret(2) = objectcenter(2) + factor * ((-1) * cos(timescale * (time-start_time)) +1.0);
-    ret(3) = objectcenter(0);
-    ret(4) = objectcenter(1) - 0.5*objectsize;
-    ret(5) = objectcenter(2) + factor * ((-1) * sin(timescale * (time-start_time)) +1.0);
-}
-
-void TrajectoryGeneratorBoris::getVelocityTranslation(double time, Eigen::VectorXf & ret) {
-    ret(0) = 0;
-    ret(1) = 0;
-    ret(2) = 0;
-    ret(3) = 0;
-    ret(4) = 0;
-    ret(5) = 0;
-}
-
-void TrajectoryGeneratorBoris::getAccelerationTranslation(double time, Eigen::VectorXf & ret) {
-    ret(0) = 0;
-    ret(1) = 0;
-    ret(2) = 0;
-    ret(3) = 0;
-    ret(4) = 0;
-    ret(5) = 0;
 }
 
 

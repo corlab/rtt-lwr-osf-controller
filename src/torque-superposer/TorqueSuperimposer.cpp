@@ -82,6 +82,11 @@ void TorqueSuperimposer::updateHook() {
         out_torques_var.torques += current_weights.weights(1) * in_torquesB_var.torques;
     }
 
+    if(this->isnanVector(out_torques_var.torques)){
+//        this->printCurrentState();
+        out_torques_var.torques.setZero();
+//        std::cout << "ERROR: detected NaN torques..."<< std::endl; //TODO
+    }
     out_torques_port.write(out_torques_var);
 }
 
@@ -174,6 +179,16 @@ void TorqueSuperimposer::preparePorts(){
     ports()->addPort(out_torques_port);
 
     portsArePrepared = true;
+}
+
+bool TorqueSuperimposer::isnanVector(Eigen::VectorXf const & vec) {
+    assert(vec.size() > 0);
+    for(unsigned int i=0; i<vec.size(); i++){
+        if (vec(i) != vec(i)){
+            return true;
+        }
+    }
+    return false;
 }
 
 void TorqueSuperimposer::displayStatus(){

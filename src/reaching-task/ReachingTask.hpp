@@ -26,7 +26,8 @@ public:
     void stopHook();
     void cleanupHook();
 
-    void setTranslationOnly(const bool translationOnly); // call before preparePorts()
+    void setTaskSpaceDimension(const unsigned int TaskSpaceDimension);
+    void setTranslationOnly(const bool translationOnly);
     void setReaching(Eigen::VectorXf const & reachingtarget);
     void setReachingPosition(float const x, float const y, float const z);
     void setReachingOrientationAxisAngle(float const x, float const y, float const z);

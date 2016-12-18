@@ -31,6 +31,7 @@ public:
     bool setInitialWeights(rstrt::robot::Weights & initialWeights);
     bool setWeights(float weightPos, float weightNull, float weightForce);
     void preparePorts();
+    bool isnanVector(Eigen::VectorXf const & vec);
     void displayStatus();
 
 private:

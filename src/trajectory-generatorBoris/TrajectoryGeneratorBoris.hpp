@@ -34,15 +34,13 @@ public:
 
     // call before preparePorts()
 	void setTranslationOnly(const bool translationOnly);
+    void setWaitTime(double wTime);
     void preparePorts();
     double getSimulationTime();
 
     void getPosition(double time, Eigen::VectorXf & ret);
     void getVelocity(double time, Eigen::VectorXf & ret);
     void getAcceleration(double time, Eigen::VectorXf & ret);
-    void getPositionTranslation(double time, Eigen::VectorXf & ret);
-    void getVelocityTranslation(double time, Eigen::VectorXf & ret);
-    void getAccelerationTranslation(double time, Eigen::VectorXf & ret);
     void setObjectCenter(double x, double y,double z);
     void setObjectSize(double size);
     void displayStatus();
@@ -68,7 +66,7 @@ private:
     bool sendTranslationOnly;
     unsigned int TaskSpaceDimension;
     RTT::os::TimeService::ticks start_ticks;
-    double start_time, current_time, time_diff;
+    double start_time, wait_time, current_time, time_diff;
     double timescale;
     Eigen::Vector3f TipOrientationEulerZYXAngleLeft, TipOrientationEulerZYXAngleRight, TipOrientationAxisAngleLeft, TipOrientationAxisAngleRight;
     Eigen::Vector3f objectcenter;
