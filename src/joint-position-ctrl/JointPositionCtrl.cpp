@@ -18,6 +18,7 @@ JointPositionCtrl::JointPositionCtrl(std::string const & name) : RTT::TaskContex
     addOperation("displayCurrentState", &JointPositionCtrl::displayCurrentState, this).doc("display current state");
 
     //other stuff
+    jointVelocityLimit = 1.0;
     portsArePrepared = false;
 }
 
@@ -95,6 +96,8 @@ void JointPositionCtrl::cleanupHook() {
 void JointPositionCtrl::setDOFsizeAndGains(unsigned int DOFsize, float gainP, float gainD){
     assert(DOFsize > 0);
     this->DOFsize = DOFsize;
+    this->pseudoVelocity = Eigen::VectorXf::Zero(DOFsize);
+    this->limiter = Eigen::MatrixXf::Identity(DOFsize,DOFsize);
     this->desJointAngles = rstrt::kinematics::JointAngles(DOFsize);
     this->desJointAngles.angles.setZero();
     this->desJointVelocities = rstrt::kinematics::JointVelocities(DOFsize);
@@ -172,17 +175,34 @@ void JointPositionCtrl::computeJointTorques(rstrt::robot::JointState const & joi
                                             rstrt::kinematics::JointAngles const & desJointAngles,
                                             rstrt::kinematics::JointVelocities const & desJointVelocities,
                                             rstrt::dynamics::JointTorques & jointTorques) {
-    jointTorques.torques = gainP * (desJointAngles.angles - jointState.angles) + gainD * (desJointVelocities.velocities - jointState.velocities) + coriolisAndGravity;
+    pseudoVelocity = gainP / gainD * (desJointAngles.angles - jointState.angles);
+    limiter.setIdentity();
+    for(unsigned int i=0; i<DOFsize; i++){
+        if(jointVelocityLimit / std::abs(pseudoVelocity(i)) < 1.0) {
+            limiter(i,i) = jointVelocityLimit / std::abs(pseudoVelocity(i));
+        }
+//        else {
+//            limiter(i,i) = 1.0;
+//        }
+    }
+    jointTorques.torques = limiter * gainP * (desJointAngles.angles - jointState.angles) + gainD * (desJointVelocities.velocities - jointState.velocities) + coriolisAndGravity;
 }
 
 void JointPositionCtrl::displayCurrentState(){
     std::cout << "############## JointPositionCtrl State begin " << std::endl;
-    std::cout << " angles " << in_robotstatus_var.angles << std::endl;
-    std::cout << " velocities " << in_robotstatus_var.velocities << std::endl;
-    std::cout << " coriolisAndGravity " << in_coriolisAndGravity_var << std::endl;
-    std::cout << " desJointAngles " << desJointAngles.angles << std::endl;
-    std::cout << " desJointVelocities " << desJointVelocities.velocities << std::endl;
-    std::cout << " jointTorques " << out_torques_var.torques << std::endl;
+    std::cout << " gainP " << gainP << std::endl;
+    std::cout << " gainD " << gainD << std::endl;
+    std::cout << " angles \n" << in_robotstatus_var.angles << std::endl;
+    std::cout << " velocities \n" << in_robotstatus_var.velocities << std::endl;
+    std::cout << " coriolisAndGravity \n" << in_coriolisAndGravity_var << std::endl;
+    std::cout << " desJointAngles \n" << desJointAngles.angles << std::endl;
+    std::cout << " desJointVelocities \n" << desJointVelocities.velocities << std::endl;
+    std::cout << " jointTorques \n" << out_torques_var.torques << std::endl;
+    std::cout << " deviation angles \n" << desJointAngles.angles - in_robotstatus_var.angles << std::endl;
+    std::cout << " deviation velocities \n" << desJointVelocities.velocities - in_robotstatus_var.velocities << std::endl;
+
+    std::cout << " pseudoVelocity \n" << pseudoVelocity << std::endl;
+    std::cout << " limiter \n" << limiter << std::endl;
     std::cout << "############## JointPositionCtrl State end " << std::endl;
 }
 

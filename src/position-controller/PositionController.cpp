@@ -30,7 +30,9 @@ PositionController::PositionController(std::string const & name) :
 			this, RTT::ClientThread).doc(
 			"set translation only, or use also orientation");
 
-	//other stuff
+    //other stuff
+    velocityLimit = 0.2;
+
     gainTranslationP = 100;
     gainTranslationD = 20;
 	portsArePrepared = false;
@@ -188,7 +190,19 @@ void PositionController::updateHook() {
         currentVelocity = in_currentTaskSpaceVelocity_var.segment<3>(6*i);
         this->computeTranslationError(desiredPosition, currentPosition, desiredVelocity, currentVelocity,
                                       errorTranslationPosition, errorTranslationVelocity);
-        errorPosition.segment<3>(6*i) = gainTranslationP * errorTranslationPosition;
+
+//        limiter.setIdentity();
+//        pseudoVelocity = gainTranslationP / gainTranslationD * errorTranslationPosition;
+//        for(unsigned int idx=0; idx<3; idx++){
+//            if(velocityLimit / std::abs(pseudoVelocity(idx)) < 1.0) {
+//                limiter(idx,idx) = velocityLimit / std::abs(pseudoVelocity(idx));
+//            }
+//    //        else {
+//    //            limiter(idx,idx) = 1.0;
+//    //        }
+//        }
+
+        errorPosition.segment<3>(6*i) = gainTranslationP * errorTranslationPosition; //*limiter
         errorVelocity.segment<3>(6*i) = gainTranslationD * errorTranslationVelocity;
 
 
@@ -259,6 +273,8 @@ void PositionController::setConstrainedVersionMode(bool useConstrainedVersion){
 
 void PositionController::setTaskSpaceDimension(const unsigned int TaskSpaceDimension) {
     this->TaskSpaceDimension = TaskSpaceDimension;
+    this->pseudoVelocity = Eigen::VectorXf::Zero(3);
+    this->limiter = Eigen::MatrixXf::Identity(3,3);
     errorPosition = Eigen::VectorXf::Zero(TaskSpaceDimension);
     errorVelocity = Eigen::VectorXf::Zero(TaskSpaceDimension);
     ref_Acceleration = Eigen::VectorXf::Zero(TaskSpaceDimension);
@@ -497,7 +513,9 @@ void PositionController::preparePorts() {
 }
 
 void PositionController::displayStatus() {
-    RTT::log(RTT::Info) << "numEndEffectors \n"
+    RTT::log(RTT::Info) << "useConstrainedVersion "
+            << useConstrainedVersion << RTT::endlog();
+    RTT::log(RTT::Info) << "numEndEffectors "
             << numEndEffectors << RTT::endlog();
 
 	RTT::log(RTT::Info) << "in_robotstatus_var.angles \n"

@@ -57,6 +57,9 @@ private:
     rstrt::dynamics::JointTorques out_torques_var;
     unsigned int DOFsize;
     float gainP, gainD;
+    float jointVelocityLimit;
+    Eigen::VectorXf pseudoVelocity;
+    Eigen::MatrixXf limiter;
     rstrt::kinematics::JointAngles desJointAngles;
     rstrt::kinematics::JointVelocities desJointVelocities;
     bool portsArePrepared;

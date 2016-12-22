@@ -127,6 +127,9 @@ private:
     bool portsArePrepared;
     bool useConstrainedVersion;
     unsigned int numEndEffectors;
+    float velocityLimit;
+    Eigen::VectorXf pseudoVelocity;
+    Eigen::MatrixXf limiter;
     Eigen::VectorXf ref_Acceleration, constraintForce;
     QuaternionHelper qh;
 };

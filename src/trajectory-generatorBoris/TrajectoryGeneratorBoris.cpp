@@ -164,7 +164,7 @@ void TrajectoryGeneratorBoris::getPosition(double time, Eigen::VectorXf & ret) {
     double transition = 5.0;
     if (time < transition){
         ret(0) = objectcenter(0);
-        ret(1) = objectcenter(1) + 0.5*objectsize + 0.2 - time / transition * 0.2;
+        ret(1) = objectcenter(1) + 0.5*objectsize + 0.3 - time / transition * 0.3;
         ret(2) = objectcenter(2);
     }
     else{
@@ -178,7 +178,7 @@ void TrajectoryGeneratorBoris::getPosition(double time, Eigen::VectorXf & ret) {
 
     if (time < transition){
         ret(6) = objectcenter(0);
-        ret(7) = objectcenter(1) - 0.5*objectsize - 0.2 + time / transition * 0.2;
+        ret(7) = objectcenter(1) - 0.5*objectsize - 0.3 + time / transition * 0.3;
         ret(8) = objectcenter(2);
     }
     else{

@@ -27,6 +27,28 @@
     %%
     xLimit = [0.0, mystoptime - mystarttime];
     
+    %left arm
+    desJointAngles(1) = 0.72;
+    desJointAngles(2) = 1.12;
+    desJointAngles(3) = 0.59;
+    desJointAngles(4) =-1.31;
+    desJointAngles(5) =-2.11;
+    desJointAngles(6) = 1.32;
+    desJointAngles(7) = 0.00;
+    
+    fig=figure();
+    hold all;
+    for jointID=1:1:numjoints
+        subplot(numjoints,1,jointID)
+        hold all
+        title(['joint ' num2str(jointID)])
+        plot(report.timestampsArea, report.feedback_angles(idxArea,jointID), '-r');
+        plot([report.timestampsArea(1) report.timestampsArea(end)], [desJointAngles(jointID) desJointAngles(jointID)], '-k');
+        ylabel('angle [rad]')
+        xlim(xLimit)
+        ylim([-pi, pi])
+    end
+    
     fig=figure();
     hold all;
     subplot(3,1,1)

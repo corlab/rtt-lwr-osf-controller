@@ -235,7 +235,9 @@ void NullspaceController::displayStatus(){
     RTT::log(RTT::Info) << "in_jacobianInv_var \n" << in_jacobianInv_var << RTT::endlog();
     RTT::log(RTT::Info) << "out_torques_var \n" << out_torques_var.torques << RTT::endlog();
 
+    RTT::log(RTT::Info) << "nullspace projection \n" << (identityDOFsizeDOFsize - in_jacobian_var.transpose() * in_jacobianInv_var) << RTT::endlog();
     RTT::log(RTT::Info) << "deviation angles \n" << in_desiredAngles_var.angles - in_robotstatus_var.angles << RTT::endlog();
+    RTT::log(RTT::Info) << "desired_torques \n" << desired_torques.torques<< RTT::endlog();
     RTT::log(RTT::Info) << "gainP \n" << gainP << RTT::endlog();
     RTT::log(RTT::Info) << "gainD \n" << gainD << RTT::endlog();
 }

@@ -192,6 +192,7 @@ bool TorqueSuperimposer::isnanVector(Eigen::VectorXf const & vec) {
 }
 
 void TorqueSuperimposer::displayStatus(){
+    RTT::log(RTT::Info) << "useConstrainedVersion " << useConstrainedVersion << RTT::endlog();
     RTT::log(RTT::Info) << "in_weights_var \n" << in_weights_var.weights << RTT::endlog();
     RTT::log(RTT::Info) << "in_projection_var \n" << in_projection_var << RTT::endlog();
     RTT::log(RTT::Info) << "in_torquesA_var \n" << in_torquesA_var.torques << RTT::endlog();
