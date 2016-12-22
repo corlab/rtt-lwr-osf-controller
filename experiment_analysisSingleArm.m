@@ -1,4 +1,4 @@
-% function experiment_analysis()
+% function experiment_analysisSingleArm()
     %this matlab file plots data logged by one of the following ops files:
     % - full_controller_boris_base.ops
     % - full_controller_boris_base2.ops
