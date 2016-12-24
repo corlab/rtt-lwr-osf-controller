@@ -66,6 +66,8 @@ orocos_component(${CMAKE_PROJECT_NAME}
                                         ${PROJECT_SOURCE_DIR}/src/position-controller/QuaternionHelper.cpp
                                         ${PROJECT_SOURCE_DIR}/src/reaching-task/ReachingTask.hpp
                                         ${PROJECT_SOURCE_DIR}/src/reaching-task/ReachingTask.cpp
+                                        ${PROJECT_SOURCE_DIR}/src/force-estimator/ForceEstimator.hpp
+                                        ${PROJECT_SOURCE_DIR}/src/force-estimator/ForceEstimator.cpp
 ) # ...you may add multiple source files
 #
 # You may add multiple orocos_component statements.

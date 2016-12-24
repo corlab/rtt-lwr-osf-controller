@@ -10,8 +10,9 @@
     
     taskSpaceDim = 3; %for Translation only
     taskSpaceDim = 6; %for Translation and Orientation
+    cstrSpaceDim = taskSpaceDim; %for Translation and Orientation
     numjoints = 7;
-    [report  skip]  = getOrocosDataStructSingleArm(['/home/nde/reports.dat'], numjoints, taskSpaceDim);
+    [report  skip]  = getOrocosDataStructSingleArm(['/home/nde/reports.dat'], numjoints, taskSpaceDim, cstrSpaceDim);
     
     
     mystarttime = 0.0;
@@ -163,24 +164,31 @@
     subplot(3,1,1)
     hold all
     title('End-Effector translational force per axis')
-    p=plot(report.timestampsArea, report.cmdCartForce(idxArea,1), '-r');
+    pCMD=plot(report.timestampsArea, report.cmdCartForce(idxArea,1), '-r');
+    pESTA=plot(report.timestampsArea, report.estCartForceA(idxArea,1), '-b');
+    pESTB=plot(report.timestampsArea, report.estCartForceB(idxArea,1), '-g');
     ylabel('x axis [Nm]')
     xlim(xLimit)
     ylim([-20, +20])
     subplot(3,1,2)
     hold all
-    p=plot(report.timestampsArea, report.cmdCartForce(idxArea,2), '-r');
+    pCMD=plot(report.timestampsArea, report.cmdCartForce(idxArea,2), '-r');
+    pESTA=plot(report.timestampsArea, report.estCartForceA(idxArea,2), '-b');
+    pESTB=plot(report.timestampsArea, report.estCartForceB(idxArea,2), '-g');
     ylabel('y axis [Nm]')
     xlim(xLimit)
     ylim([-20, +20])
     subplot(3,1,3)
     hold all
-    p=plot(report.timestampsArea, report.cmdCartForce(idxArea,3), '-r');
+    pCMD=plot(report.timestampsArea, report.cmdCartForce(idxArea,3), '-r');
+    pESTA=plot(report.timestampsArea, report.estCartForceA(idxArea,3), '-b');
+    pESTB=plot(report.timestampsArea, report.estCartForceB(idxArea,3), '-g');
     ylabel('z axis [Nm]')
     xlim(xLimit)
-    ylim([-20, +20])
+    ylim([30, 50])
     xlabel('Time [sec]')
-    legend([p],'command')
+    legend([pCMD,pESTA,pESTB],'commanded via positionctrl','estim. A via constraint', 'estim. B via constraint')
+    
     
     if taskSpaceDim == 6
         fig=figure();

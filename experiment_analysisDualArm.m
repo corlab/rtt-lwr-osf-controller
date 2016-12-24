@@ -7,8 +7,9 @@
     clear all;
     
     taskSpaceDim = 12; %for Translation and Orientation
+    cstrSpaceDim =  6; %for Translation and Orientation
     numjoints = 14;
-    [report  skip]  = getOrocosDataStructDualArm(['/home/nde/reports.dat'], numjoints, taskSpaceDim);
+    [report  skip]  = getOrocosDataStructDualArm(['/home/nde/reports.dat'], numjoints, taskSpaceDim, cstrSpaceDim);
     
     
     mystarttime = 0.0;
@@ -177,3 +178,31 @@
     zlabel('z axis')
     axis equal
     legend([pDesL,pCurL,pDesR,pCurR],'desired left', 'current left', 'desired right', 'current right')
+    
+    
+    fig=figure();
+    hold all;
+    subplot(3,1,1)
+    hold all
+    title('Constraint translational position per axis')
+    pDes=plot([report.timestampsArea(1) report.timestampsArea(end)], [0.0 0.0], '-k');
+    pCur=plot(report.timestampsArea, report.curCartPosCstr(idxArea,1), '-b');
+    ylabel('x axis [m]')
+    xlim(xLimit)
+    ylim([-0.1, 0.1])
+    subplot(3,1,2)
+    hold all
+    pDes=plot([report.timestampsArea(1) report.timestampsArea(end)], [0.0 0.0], '-k');
+    pCur=plot(report.timestampsArea, report.curCartPosCstr(idxArea,2), '-b');
+    ylabel('y axis [m]')
+    xlim(xLimit)
+    ylim([-0.1, 0.1])
+    subplot(3,1,3)
+    hold all
+    pDes=plot([report.timestampsArea(1) report.timestampsArea(end)], [0.3 0.3], '-k');
+    pCur=plot(report.timestampsArea, report.curCartPosCstr(idxArea,3), '-b');
+    ylabel('z axis [m]')
+    xlim(xLimit)
+    ylim([0.0, 0.4])
+    xlabel('Time [sec]')
+    legend([pDes,pCur],'desired','current')

@@ -1,7 +1,8 @@
-function [report skip]= getOrocosDataStructDualArm(filename, numjoints, taskSpaceDim)
+function [report skip]= getOrocosDataStructDualArm(filename, numjoints, taskSpaceDim, cstrSpaceDim)
     joints = 1:numjoints;
     taskSpaceArray = 1:taskSpaceDim;
-    [data skip] = readOrocosData(filename, 2+3*numjoints+6*taskSpaceDim);
+    cstrSpaceArray = 1:cstrSpaceDim;
+    [data skip] = readOrocosData(filename, 2+3*numjoints+6*taskSpaceDim+1*cstrSpaceDim);
     
     report = struct;
     report.data = data;
@@ -24,8 +25,10 @@ function [report skip]= getOrocosDataStructDualArm(filename, numjoints, taskSpac
     idx=idx+taskSpaceDim;
     report.desCartAccTask       = data(:,taskSpaceArray+idx);
     idx=idx+taskSpaceDim;
-    report.cmdCartForce         = data(:,taskSpaceArray+idx);
-    idx=idx+taskSpaceDim;
+    report.cmdCartForce         = data(:,cstrSpaceArray+idx);
+    idx=idx+cstrSpaceDim;
+    report.curCartPosCstr       = data(:,cstrSpaceArray+idx);
+    idx=idx+cstrSpaceDim;
     
     assert(idx+1==size(data,2)); %+1 because of last space as senseless variable
     

@@ -94,12 +94,36 @@ void ConstrainedForceController::updateHook() {
 
 	out_torques_var.torques.setZero();
 
-	out_torques_var.torques = in_h_var
-			+ ((in_inertia_var * in_inertia_c_var.inverse())
-					* ((in_p_var * in_robotstatus_var.torques)
-							- (in_p_var * in_h_var)
-							+ (in_Cc_var * in_robotstatus_var.velocities)))
+//    Eigen::VectorXf foo;
+//    foo = Eigen::VectorXf::Zero(14);
+//    foo = in_robotstatus_var.velocities;
+//    foo(0) = in_robotstatus_var.velocities(6);//reverse order of left arm joint values
+//    foo(1) = in_robotstatus_var.velocities(5);
+//    foo(2) = in_robotstatus_var.velocities(4);
+//    foo(3) = in_robotstatus_var.velocities(3);
+//    foo(4) = in_robotstatus_var.velocities(2);
+//    foo(5) = in_robotstatus_var.velocities(1);
+//    foo(6) = in_robotstatus_var.velocities(0);
+//    in_robotstatus_var.velocities = foo;
+
+    out_torques_var.torques = in_h_var
+            + in_inertia_var * in_inertia_c_var.inverse()
+                    * (in_p_var * in_robotstatus_var.torques
+                            - in_p_var * in_h_var
+                            + in_Cc_var * in_robotstatus_var.velocities)
             + (in_jacobian_c_var.transpose() * current_lambda);
+
+//    Eigen::VectorXf bar;
+//    bar = Eigen::VectorXf::Zero(14);
+//    bar = out_torques_var.torques;
+//    bar(0) = out_torques_var.torques(6);//reverse order of left arm joint values
+//    bar(1) = out_torques_var.torques(5);
+//    bar(2) = out_torques_var.torques(4);
+//    bar(3) = out_torques_var.torques(3);
+//    bar(4) = out_torques_var.torques(2);
+//    bar(5) = out_torques_var.torques(1);
+//    bar(6) = out_torques_var.torques(0);
+//    out_torques_var.torques = bar;
 
 	out_torques_port.write(out_torques_var);
 }
