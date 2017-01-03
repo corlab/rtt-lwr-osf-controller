@@ -91,15 +91,15 @@ void ForceEstimator::updateHook() {
     out_forceA_var = (in_jacobianCstr_var * in_inertia_var.inverse() * in_jacobianCstr_var.transpose() + tmpeyeCSdimCSdim).inverse()
                     * (in_jacobianCstr_var * in_inertia_var.inverse() * (in_h_var - B.transpose() * in_robotstatus_var.torques) - in_jacobianDotCstr_var * in_robotstatus_var.velocities);
 
-    qrDecomposition.compute(in_jacobianCstr_var.transpose());
-    Q = qrDecomposition.householderQ();// * thinEYE;
+//    qrDecomposition.compute(in_jacobianCstr_var.transpose());
+//    Q = qrDecomposition.householderQ();// * thinEYE;
 //    assert(Q.rows()==DOFsize+floatingBaseDOF);
 //    assert(Q.cols()==DOFsize+floatingBaseDOF);
-    R = qrDecomposition.matrixQR();
+//    R = qrDecomposition.matrixQR();
 //    assert(R.rows()==DOFsize+floatingBaseDOF);
 //    assert(R.cols()==CstrSpaceDimension);
 
-    Rsmall = R.topRows(CstrSpaceDimension);
+//    Rsmall = R.topRows(CstrSpaceDimension);
 //    assert(Rsmall.rows()==CstrSpaceDimension);
 //    assert(Rsmall.cols()==CstrSpaceDimension);
 
@@ -259,16 +259,16 @@ void ForceEstimator::displayStatus() {
 	RTT::log(RTT::Info) << "in_h_var \n" << in_h_var << RTT::endlog();
     RTT::log(RTT::Info) << "in_torques_var \n" << in_torques_var << RTT::endlog();
     RTT::log(RTT::Info) << "out_forceA_var \n" << out_forceA_var << RTT::endlog();
-    RTT::log(RTT::Info) << "out_forceB_var \n" << out_forceB_var << RTT::endlog();
+//    RTT::log(RTT::Info) << "out_forceB_var \n" << out_forceB_var << RTT::endlog();
 
-    RTT::log(RTT::Info) << "R \n" << R << RTT::endlog();
-    RTT::log(RTT::Info) << "Rsmall \n" << Rsmall << RTT::endlog();
-    RTT::log(RTT::Info) << "Rsmall.inverse() \n" << Rsmall.inverse() << RTT::endlog();
-    RTT::log(RTT::Info) << "Q \n" << Q << RTT::endlog();
-    RTT::log(RTT::Info) << "Sc \n" << Sc << RTT::endlog();
-    RTT::log(RTT::Info) << "Rsmall.inverse() * Sc * Q.transpose() \n" << Rsmall.inverse() * Sc * Q.transpose() << RTT::endlog();
+//    RTT::log(RTT::Info) << "R \n" << R << RTT::endlog();
+//    RTT::log(RTT::Info) << "Rsmall \n" << Rsmall << RTT::endlog();
+//    RTT::log(RTT::Info) << "Rsmall.inverse() \n" << Rsmall.inverse() << RTT::endlog();
+//    RTT::log(RTT::Info) << "Q \n" << Q << RTT::endlog();
+//    RTT::log(RTT::Info) << "Sc \n" << Sc << RTT::endlog();
+//    RTT::log(RTT::Info) << "Rsmall.inverse() * Sc * Q.transpose() \n" << Rsmall.inverse() * Sc * Q.transpose() << RTT::endlog();
 
-    this->checkQR(in_jacobianCstr_var.transpose(),Q,R);
+//    this->checkQR(in_jacobianCstr_var.transpose(),Q,R);
 
 }
 

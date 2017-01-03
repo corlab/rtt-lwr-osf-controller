@@ -178,16 +178,17 @@ void PositionController::updateHook() {
 		return;
 	}
 
+
     errorPosition.setZero();
     errorVelocity.setZero();
     for(unsigned int i=0; i<numEndEffectors; i++){
         //in case of a single endeffector one can also use .head<3>()
         errorTranslationPosition.setZero();
         errorTranslationVelocity.setZero();
-        desiredPosition = in_desiredTaskSpacePosition_var.segment<3>(6*i);
-        currentPosition = in_currentTaskSpacePosition_var.segment<3>(6*i);
-        desiredVelocity = in_desiredTaskSpaceVelocity_var.segment<3>(6*i);
-        currentVelocity = in_currentTaskSpaceVelocity_var.segment<3>(6*i);
+        desiredPosition = in_desiredTaskSpacePosition_var.segment<3>(WorkspaceDimension*i);
+        currentPosition = in_currentTaskSpacePosition_var.segment<3>(WorkspaceDimension*i);
+        desiredVelocity = in_desiredTaskSpaceVelocity_var.segment<3>(WorkspaceDimension*i);
+        currentVelocity = in_currentTaskSpaceVelocity_var.segment<3>(WorkspaceDimension*i);
         this->computeTranslationError(desiredPosition, currentPosition, desiredVelocity, currentVelocity,
                                       errorTranslationPosition, errorTranslationVelocity);
 
@@ -202,22 +203,22 @@ void PositionController::updateHook() {
 //    //        }
 //        }
 
-        errorPosition.segment<3>(6*i) = gainTranslationP * errorTranslationPosition; //*limiter
-        errorVelocity.segment<3>(6*i) = gainTranslationD * errorTranslationVelocity;
+        errorPosition.segment<3>(WorkspaceDimension*i) = gainTranslationP * errorTranslationPosition; //*limiter
+        errorVelocity.segment<3>(WorkspaceDimension*i) = gainTranslationD * errorTranslationVelocity;
 
 
         if (!receiveTranslationOnly) {
             //in case of a single endeffector one can also use .tail<3>()
             errorOrientationPosition.setZero();
             errorOrientationVelocity.setZero();
-            desiredPosition = in_desiredTaskSpacePosition_var.segment<3>(6*i+3);
-            currentPosition = in_currentTaskSpacePosition_var.segment<3>(6*i+3);
-            desiredVelocity = in_desiredTaskSpaceVelocity_var.segment<3>(6*i+3);
-            currentVelocity = in_currentTaskSpaceVelocity_var.segment<3>(6*i+3);
+            desiredPosition = in_desiredTaskSpacePosition_var.segment<3>(WorkspaceDimension*i+3);
+            currentPosition = in_currentTaskSpacePosition_var.segment<3>(WorkspaceDimension*i+3);
+            desiredVelocity = in_desiredTaskSpaceVelocity_var.segment<3>(WorkspaceDimension*i+3);
+            currentVelocity = in_currentTaskSpaceVelocity_var.segment<3>(WorkspaceDimension*i+3);
             this->computeOrientationError(desiredPosition, currentPosition, desiredVelocity, currentVelocity,
                                           errorOrientationPosition, errorOrientationVelocity);
-            errorPosition.segment<3>(6*i+3) = gainOrientationP * errorOrientationPosition;
-            errorVelocity.segment<3>(6*i+3) = gainOrientationD * errorOrientationVelocity;
+            errorPosition.segment<3>(WorkspaceDimension*i+3) = gainOrientationP * errorOrientationPosition;
+            errorVelocity.segment<3>(WorkspaceDimension*i+3) = gainOrientationD * errorOrientationVelocity;
         }
     }
 
@@ -228,27 +229,20 @@ void PositionController::updateHook() {
 	//Start Khatib projected endeffector motion controller
     if(useConstrainedVersion){
         constraintForce = in_constraintLambda_var * ref_Acceleration;
-        constraintForce += in_constraintLambda_var
-                * (in_jacobian_var * in_constraintM_var.inverse() * in_P_var
-                        * in_h_var
-                        - (in_jacobianDot_var
-                                + in_jacobian_var * in_constraintM_var.inverse()
-                                        * in_constraintC_var)
-                                * in_robotstatus_var.velocities);
+//        constraintForce = in_constraintLambda_var * ref_Acceleration +
+//                          in_constraintLambda_var * (in_jacobian_var * in_constraintM_var.inverse() * in_P_var * in_h_var) +
+//                          in_constraintLambda_var * (-in_jacobianDot_var - in_jacobian_var * in_constraintM_var.inverse() * in_constraintC_var) * in_robotstatus_var.velocities;
     }
     else{
-        constraintForce = ((in_jacobian_var*in_constraintM_var.inverse()*in_jacobian_var.transpose()).inverse())*ref_Acceleration+
-                          ((in_jacobian_var*in_constraintM_var.inverse()*in_jacobian_var.transpose()).inverse())*(-in_jacobianDot_var*in_robotstatus_var.velocities)+
-                          (((in_jacobian_var*in_constraintM_var.inverse()*in_jacobian_var.transpose()).inverse())*in_jacobian_var*in_constraintM_var.inverse()*in_h_var);
-
-//        constraintForce = ((in_jacobian_var*in_constraintM_var.inverse()*in_jacobian_var.transpose()).inverse())*ref_Acceleration+
-//                          (((in_jacobian_var*in_constraintM_var.inverse()*in_jacobian_var.transpose()).inverse())*in_jacobian_var*in_constraintM_var.inverse()*in_h_var);
-//        constraintForce = ((in_jacobian_var*in_constraintM_var.inverse()*in_jacobian_var.transpose()).inverse())*ref_Acceleration;
-    //    constraintForce = ref_Acceleration;
+        constraintForce = in_constraintLambda_var * ref_Acceleration;
+//        constraintForce = in_constraintLambda_var * ref_Acceleration +
+//                          in_constraintLambda_var * in_jacobian_var * in_constraintM_var.inverse() * in_h_var +
+//                          in_constraintLambda_var * (-in_jacobianDot_var) * in_robotstatus_var.velocities;
     }
 
 	out_torques_var.torques.setZero();
 	out_torques_var.torques = in_jacobian_var.transpose() * constraintForce;
+    out_torques_var.torques += in_h_var; //TODO correct: only for pure lambda * refAcc without taskspace gravity&coriolis compensation
 	out_torques_port.write(out_torques_var);
 
     out_force_var = constraintForce;
@@ -299,6 +293,12 @@ void PositionController::setTaskSpaceDimension(const unsigned int TaskSpaceDimen
 
 void PositionController::setTranslationOnly(const bool translationOnly) {
 	receiveTranslationOnly = translationOnly;
+    if (receiveTranslationOnly) {
+        WorkspaceDimension = 3;
+    }
+    else{
+        WorkspaceDimension = 6;
+    }
 }
 void PositionController::setGains(float kp, float kd) {
 	assert(kp >= 0);
@@ -583,6 +583,9 @@ void PositionController::displayStatus() {
 //        axisangle_temp = in_currentTaskSpacePosition_var.tail<3>();
 //        qh.test(axisangle_temp);
     }
+
+    RTT::log(RTT::Info) << "in_currentTaskSpacePosition_var \n"
+            << in_currentTaskSpacePosition_var << RTT::endlog();
 }
 
 

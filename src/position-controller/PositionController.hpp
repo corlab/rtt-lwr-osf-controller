@@ -119,7 +119,6 @@ private:
     Eigen::Vector3f errorOrientationPosition, errorOrientationVelocity;
     Eigen::VectorXf errorPosition, errorVelocity;
     Eigen::Vector3f desiredPosition, currentPosition, desiredVelocity, currentVelocity;
-
     unsigned int DOFsize;
     bool receiveTranslationOnly;
     unsigned int TaskSpaceDimension;
@@ -127,6 +126,7 @@ private:
     bool portsArePrepared;
     bool useConstrainedVersion;
     unsigned int numEndEffectors;
+    unsigned int WorkspaceDimension;
     float velocityLimit;
     Eigen::VectorXf pseudoVelocity;
     Eigen::MatrixXf limiter;

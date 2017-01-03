@@ -67,7 +67,7 @@ private:
 	Eigen::VectorXf in_h_var;
 	Eigen::MatrixXf in_Cc_var;
     Eigen::VectorXf current_lambda;
-
+    Eigen::MatrixXf identityDOFsizeDOFsize;
 	rstrt::dynamics::JointTorques out_torques_var;
 
 	unsigned int DOFsize;

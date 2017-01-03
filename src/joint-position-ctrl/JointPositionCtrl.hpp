@@ -28,6 +28,7 @@ public:
     void cleanupHook();
 
     void setDOFsizeAndGains(unsigned int DOFsize, float gainP, float gainD);
+    void setDOFsize(unsigned int DOFsize);
     void setGains(float gainP, float gainD);
     bool setDesiredJointAngles(rstrt::kinematics::JointAngles & desJointAngles);
     bool setDesiredJointVelocities(rstrt::kinematics::JointVelocities & desJointVelocities);

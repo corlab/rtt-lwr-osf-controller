@@ -11,6 +11,7 @@
 JointPositionCtrl::JointPositionCtrl(std::string const & name) : RTT::TaskContext(name) {
     //prepare operations
     addOperation("setDOFsizeAndGains", &JointPositionCtrl::setDOFsizeAndGains, this).doc("set DOF size and Gains");
+    addOperation("setDOFsize", &JointPositionCtrl::setDOFsize, this).doc("set DOF size");
     addOperation("setGains", &JointPositionCtrl::setGains, this).doc("set Gains");
     addOperation("setDesiredJointAngles", &JointPositionCtrl::setDesiredJointAngles, this).doc("set desired joint angles");
     addOperation("setDesiredJointVelocities", &JointPositionCtrl::setDesiredJointVelocities, this).doc("set desired joint velocities");
@@ -94,6 +95,11 @@ void JointPositionCtrl::cleanupHook() {
 }
 
 void JointPositionCtrl::setDOFsizeAndGains(unsigned int DOFsize, float gainP, float gainD){
+    this->setDOFsize(DOFsize);
+    this->setGains(gainP, gainD);
+}
+
+void JointPositionCtrl::setDOFsize(unsigned int DOFsize){
     assert(DOFsize > 0);
     this->DOFsize = DOFsize;
     this->pseudoVelocity = Eigen::VectorXf::Zero(DOFsize);
@@ -102,7 +108,6 @@ void JointPositionCtrl::setDOFsizeAndGains(unsigned int DOFsize, float gainP, fl
     this->desJointAngles.angles.setZero();
     this->desJointVelocities = rstrt::kinematics::JointVelocities(DOFsize);
     this->desJointVelocities.velocities.setZero();
-    this->setGains(gainP, gainD);
     this->preparePorts();
 }
 

@@ -106,11 +106,8 @@ void ConstrainedForceController::updateHook() {
 //    foo(6) = in_robotstatus_var.velocities(0);
 //    in_robotstatus_var.velocities = foo;
 
-    out_torques_var.torques = in_h_var
-            + in_inertia_var * in_inertia_c_var.inverse()
-                    * (in_p_var * in_robotstatus_var.torques
-                            - in_p_var * in_h_var
-                            + in_Cc_var * in_robotstatus_var.velocities)
+    out_torques_var.torques = in_h_var + in_inertia_var * (in_inertia_c_var+0.00001*identityDOFsizeDOFsize).inverse()
+                    * (in_p_var * in_robotstatus_var.torques - in_p_var * in_h_var + in_Cc_var * in_robotstatus_var.velocities)
             + (in_jacobian_c_var.transpose() * current_lambda);
 
 //    Eigen::VectorXf bar;
@@ -138,6 +135,7 @@ void ConstrainedForceController::cleanupHook() {
 void ConstrainedForceController::setDOFsize(unsigned int DOFsize) {
 	assert(DOFsize > 0);
 	this->DOFsize = DOFsize;
+    this->identityDOFsizeDOFsize = Eigen::MatrixXf::Identity(DOFsize,DOFsize);
 }
 
 void ConstrainedForceController::setCstrSpaceDimension(const unsigned int CstrSpaceDimension) {
@@ -222,6 +220,7 @@ void ConstrainedForceController::preparePorts() {
 }
 
 void ConstrainedForceController::displayStatus(){
+    RTT::log(RTT::Info) << "in_robotstatus_var.torques \n" << in_robotstatus_var.torques << RTT::endlog();
     RTT::log(RTT::Info) << "in_lambda_des_var \n" << in_lambda_des_var << RTT::endlog();
     RTT::log(RTT::Info) << "in_jacobian_c_var \n" << in_jacobian_c_var << RTT::endlog();
     RTT::log(RTT::Info) << "in_inertia_var \n" << in_inertia_var << RTT::endlog();
@@ -230,6 +229,7 @@ void ConstrainedForceController::displayStatus(){
     RTT::log(RTT::Info) << "in_h_var \n" << in_h_var << RTT::endlog();
     RTT::log(RTT::Info) << "in_Cc_var \n" << in_Cc_var << RTT::endlog();
     RTT::log(RTT::Info) << "out_torques_var \n" << out_torques_var.torques << RTT::endlog();
+    RTT::log(RTT::Info) << "current_lambda \n" << current_lambda << RTT::endlog();
 }
 
 //this macro should appear only once per library
