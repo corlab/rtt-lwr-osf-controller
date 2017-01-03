@@ -58,6 +58,8 @@ orocos_component(${CMAKE_PROJECT_NAME}
                                         ${PROJECT_SOURCE_DIR}/src/trajectory-generator/TrajectoryGenerator.cpp
                                         ${PROJECT_SOURCE_DIR}/src/trajectory-generatorBoris/TrajectoryGeneratorBoris.hpp
                                         ${PROJECT_SOURCE_DIR}/src/trajectory-generatorBoris/TrajectoryGeneratorBoris.cpp
+                                        ${PROJECT_SOURCE_DIR}/src/trajectory-generatorComan/TrajectoryGeneratorComan.hpp
+                                        ${PROJECT_SOURCE_DIR}/src/trajectory-generatorComan/TrajectoryGeneratorComan.cpp
                                         ${PROJECT_SOURCE_DIR}/src/joint-position-ctrl/JointPositionCtrl.hpp
                                         ${PROJECT_SOURCE_DIR}/src/joint-position-ctrl/JointPositionCtrl.cpp
                                         ${PROJECT_SOURCE_DIR}/src/torque-transition/TorqueTransition.hpp
